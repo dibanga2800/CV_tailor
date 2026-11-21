@@ -217,3 +217,192 @@ def save(profile: dict, result: dict | None = None) -> None:
     if result is not None:
         data["result"] = result
     save_json(STATE, data)
+
+
+# ----------------------------------------------------------------------------- guided coach
+# One step at a time, like a conversation: each step checks one part of the profile, can offer AI options
+# written only from your facts, and adds anything left to do to a running to-do list.
+
+STEPS = [
+    ("url", "Profile link"), ("target", "Target role"), ("strengths", "Strengths to lead with"),
+    ("headline", "Headline"), ("photo", "Profile photo"), ("banner", "Banner"), ("featured", "Featured work"),
+    ("spelling", "Spelling & grammar"), ("cv_match", "Matches your CV"), ("about", "About"),
+    ("experience", "Experience"), ("skills", "Skills"), ("recs", "Recommendations"),
+    ("age", "Age-bias signals"), ("todo", "Your to-do list"),
+]
+OLD_TECH = re.compile(r"\b(cobol|fortran|vb6|visual basic 6|lotus notes|foxpro|windows (?:xp|nt|2000)|novell|"
+                      r"netware|frontpage|flash|silverlight|dos)\b", re.I)
+
+
+def _url_check(url: str) -> list[dict]:
+    m = re.search(r"linkedin\.com/in/([A-Za-z0-9_%-]+)", url or "")
+    if not m:
+        return [{"status": "fail", "title": "Profile link added", "detail": "Paste your profile link, e.g. linkedin.com/in/firstname-lastname.", "fix": ""}]
+    slug = m.group(1)
+    tidy = not re.search(r"-[0-9a-f]{5,}$|\d{4,}$", slug)
+    return [{"status": "pass" if tidy else "warn", "title": "Custom link", "detail": f"linkedin.com/in/{slug}",
+             "fix": "" if tidy else "In LinkedIn: Edit public profile & URL, then set it to your name (and put it on your CV)."}]
+
+
+def _spelling(profile: dict, vocab_texts: list[str]) -> list[dict]:
+    import spelling
+    vocab = spelling._vocabulary(*vocab_texts)
+    out = []
+    for field in ("headline", "about", "experience"):
+        for i, line in enumerate(l for l in (profile.get(field) or "").splitlines() if l.strip()):
+            spell, grammar = spelling.check_line(f"{field}.{i}", line, vocab)
+            for it in spell + grammar:
+                fix = it.get("fix") or {}
+                out.append({"status": "warn", "title": f"{field.title()}: {it.get('note') or it.get('label') or 'check this'}",
+                            "detail": line[:140], "fix": f"Change “{fix['from']}” to “{fix['to']}”." if fix.get("from") else ""})
+    return out[:20]
+
+
+def _cv_roles(master_text: str) -> list[dict]:
+    try:
+        import ats
+        return ats.parse_jobs([l for l in master_text.splitlines() if l.strip()])
+    except Exception:  # noqa: BLE001
+        return []
+
+
+def _cv_match(profile: dict, master_text: str, fact_text: str) -> list[dict]:
+    exp = _fold(profile.get("experience") or "")
+    if not exp:
+        return [{"status": "open", "title": "Paste your Experience section (in the Experience step) to compare it with your CV", "detail": "", "fix": ""}]
+    out = []
+    for r in _cv_roles(master_text)[:5]:
+        title, firm = (r.get("title") or "").strip(), (r.get("company") or r.get("employer") or "").strip()
+        title = re.sub(r"\s*\(.*?\)", "", title).strip()
+        if not title and not firm:
+            continue
+        has_t = bool(title) and _fold(title) in exp
+        has_f = bool(firm) and _fold(firm) in exp
+        st = "pass" if has_t and (has_f or not firm) else "warn"
+        out.append({"status": st, "title": f"{title or 'Role'}{' at ' + firm if firm else ''}",
+                    "detail": "On LinkedIn as on your CV." if st == "pass" else ("Employer found, title differs." if has_f else "Not found on LinkedIn."),
+                    "fix": "" if st == "pass" else "Use the same job title and employer on LinkedIn as on your CV; recruiters compare them."})
+    facts = _fold(fact_text)
+    stray = sorted({n for n in NUM.findall(" ".join([profile.get("about") or "", profile.get("experience") or ""]))
+                    if len(n.strip("£$€%kmx.,")) >= 2 and n.strip(".,") not in facts})
+    if stray:
+        out.append({"status": "warn", "title": "Numbers not in your facts", "detail": ", ".join(stray[:8]),
+                    "fix": "Check each one; if it's true, add it to your facts so your CV and LinkedIn agree."})
+    return out or [{"status": "open", "title": "Couldn't read roles from your master CV", "detail": "", "fix": ""}]
+
+
+def _age_signals(profile: dict) -> list[dict]:
+    text = " ".join(profile.get(k) or "" for k in ("headline", "about", "experience"))
+    out, year = [], time.localtime().tm_year
+    years = [int(y) for y in re.findall(r"\b(19[5-9]\d|20[0-2]\d)\b", text)]
+    if years and min(years) <= year - 20:
+        out.append({"status": "warn", "title": f"Dates going back to {min(years)}",
+                    "detail": "Showing more than 15 to 20 years can invite age bias.",
+                    "fix": "Keep detail for the last 15 years; group older roles under 'Earlier career' without dates."})
+    m = re.search(r"\b([2-4]\d)\+?\s*years?(?:'|’)?\s*(?:of\s*)?experience", text, re.I)
+    if m:
+        out.append({"status": "warn", "title": f"“{m.group(0)}”", "detail": "A big year count can read as 'too senior' or 'expensive'.",
+                    "fix": "Lead with what you achieved instead, or say '15+ years'."})
+    old = sorted({o.lower() for o in OLD_TECH.findall(text)})
+    if old:
+        out.append({"status": "warn", "title": "Older technologies named", "detail": ", ".join(old),
+                    "fix": "Drop them unless the job asks for them; keep your current stack up front."})
+    if re.search(r"\b(born|date of birth|dob|aged \d{2})\b", text, re.I):
+        out.append({"status": "fail", "title": "Age or date of birth mentioned", "detail": "", "fix": "Remove it: UK employers shouldn't see it."})
+    return out or [{"status": "pass", "title": "No age-bias signals found", "detail": "", "fix": ""}]
+
+
+def _featured(fact_bank: list[dict]) -> list[dict]:
+    wins = [f["text"] for f in fact_bank if NUM.search(f["text"]) and len(f["text"]) > 30][:3]
+    return [{"status": "open", "title": "Ideas to feature", "detail": " · ".join(w[:90] for w in wins) or "Add a project or case study with a link.",
+             "fix": "Pin a project, case study or portfolio link that shows one of these results."}]
+
+
+def coach(profile: dict, state: dict, bank: list[dict], bank_text: str, terms: set[str], jobs: list[dict],
+          titles: list[str], master_text: str) -> dict:
+    """Every step's result, the score, and the running to-do list."""
+    titles = [state.get("target")] if (state.get("target") or "").strip() else titles
+    base = check({**profile, "ticked": state.get("ticked") or []}, bank_text, terms, jobs, titles)
+    by_group = {}
+    for it in base["items"]:
+        by_group.setdefault(it["group"], []).append(it)
+    ticked = set(state.get("ticked") or [])
+    fact_text = " ".join(f["text"] for f in bank)
+    manual = lambda iid, title, fix: [{"status": "pass" if iid in ticked else "open", "title": title, "detail": "", "fix": fix, "tick": iid}]  # noqa: E731
+    items = {
+        "url": _url_check(state.get("url") or ""),
+        "target": [{"status": "pass" if (state.get("target") or "").strip() else "open",
+                    "title": state.get("target") or "Say which role you want to be found for", "detail": "", "fix": ""}],
+        "strengths": [{"status": "pass" if (state.get("strengths") or "").strip() else "open",
+                       "title": state.get("strengths") or "Pick 2 or 3 strengths to lead with", "detail": "", "fix": ""}],
+        "headline": by_group.get("Headline", []),
+        "photo": manual("photo", "A clear, recent photo", "Head and shoulders, plain background, good light."),
+        "banner": manual("banner", "A banner that says what you do", "A simple image with your role or one line of proof."),
+        "featured": manual("featured", "Something pinned in Featured", "") + _featured(bank),
+        "spelling": _spelling(profile, [bank_text, master_text]) or [{"status": "pass", "title": "No spelling or grammar issues found", "detail": "", "fix": ""}],
+        "cv_match": _cv_match(profile, master_text, fact_text),
+        "about": by_group.get("About", []),
+        "experience": by_group.get("Experience", []),
+        "skills": by_group.get("Skills", []),
+        "recs": manual("recs", "Two or more recent recommendations", "Ask a manager or senior colleague; the draft message below helps."),
+        "age": _age_signals(profile),
+    }
+    steps, todo = [], []
+    for sid, title in STEPS:
+        its = items.get(sid, [])
+        if sid == "todo":
+            continue
+        worst = "open" if not its else min((i["status"] for i in its), key=["fail", "open", "warn", "manual", "pass"].index)
+        steps.append({"id": sid, "title": title, "status": {"fail": "todo", "warn": "todo", "open": "open"}.get(worst, "done"), "items": its})
+        todo += [{"step": sid, "text": i.get("fix") or i.get("detail") or i["title"]} for i in its if i["status"] in ("fail", "warn")]
+    done = sum(s["status"] == "done" for s in steps)
+    steps.append({"id": "todo", "title": "Your to-do list", "status": "done" if not todo else "todo", "items": []})
+    return {"steps": steps, "todo": todo, "score": round(100 * done / (len(STEPS) - 1)), "demand": base["demand"],
+            "targets": base["targets"], "checked_at": time.time()}
+
+
+OPTIONS = {
+    "headline": ("4 headline options, each at most 220 characters, in the shape: target role | 2 or 3 strongest relevant "
+                 "skills | one result or unique value, all from the facts.", 4),
+    "about": ("2 About sections, each 1,200 to 2,000 characters, first person, short paragraphs. The first 265 characters "
+              "say who they are, the role they want and their strongest result. End with what they're open to and how to "
+              "get in touch.", 2),
+    "experience": ("3 versions of the description for their most recent role: 3 to 5 short lines, each a result with its "
+                   "number where the facts give one, naming the tools used.", 3),
+    "strengths": ("3 options, each a comma-separated list of 3 strengths to lead with, worded as a recruiter would search "
+                  "for them and matching the target role.", 3),
+    "recs": ("2 short, friendly LinkedIn messages asking the named person for a recommendation, saying which 2 or 3 "
+             "things from shared work they could mention (only from the facts).", 2),
+    "banner": ("3 banner lines, each at most 60 characters: the role and one line of proof.", 3),
+}
+OPTIONS_SYSTEM = """You coach a UK job seeker through improving their LinkedIn profile, one part at a time.
+Use ONLY the facts given: never add a skill, employer, title, number or claim that isn't there, and never
+change a number. UK English. Plain, confident, no filler ('passionate', 'results-driven', 'team player').
+Task: {task}
+Return JSON only: {{"options": ["..."], "facts_used": ["F003"]}}"""
+
+
+def options(step: str, bank_prompt: str, fact_text: dict, state: dict, profile: dict, wanted: list[str],
+            emphasis: str = "", person: str = "") -> dict:
+    task, n = OPTIONS[step]
+    user = "\n".join([
+        f"Target role: {state.get('target') or 'not set'}",
+        f"Strengths they chose: {state.get('strengths') or 'not set'}",
+        f"In-demand skills their facts support: {', '.join(wanted) or 'none known'}",
+        f"Current {step}: {profile.get(step) or state.get(step) or '(empty)'}"[:3000],
+        f"Person to ask: {person}" if person else "",
+        f"Put more emphasis on: {emphasis}" if emphasis else "",
+        f"<fact_bank>\n{bank_prompt}\n</fact_bank>"])
+    out, used, _ = engine.complete_json(OPTIONS_SYSTEM.format(task=task), user, expected={"options": list},
+                                        mock=lambda: json.dumps({"options": [f"Option {i + 1} for {step}: Data Engineer | Python, SQL, Azure | reporting used across 40 sites"
+                                                                             for i in range(n)], "facts_used": ["F005"]}))
+    opts = [str(o).strip() for o in out.get("options") or [] if str(o).strip()][:n]
+    cited = " ".join(fact_text.get(f, "") for f in out.get("facts_used") or []) or " ".join(fact_text.values())
+    warn = []
+    for o in opts:
+        bad = sorted({x.strip(".,") for x in NUM.findall(o) if len(x.strip(".,£$€%kmx")) >= 2
+                      and x.strip(".,") not in cited and x.strip(".,£$€%") not in cited})
+        warn.append([f"'{b}' isn't in your facts: check it before using" for b in bad])
+    if step == "headline":
+        opts = [o[:HEADLINE_MAX] for o in opts]
+    return {"step": step, "options": opts, "warnings": warn, "engine": engine.LABELS.get(used, used)}

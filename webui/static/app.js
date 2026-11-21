@@ -1811,68 +1811,185 @@ function setupJobQuery() {
   });
 }
 
-/* ------------------------------------------------------------------ LinkedIn checklist */
-function liProfile() {
-  return { headline: $("#li-headline").value, about: $("#li-about").value, skills: $("#li-skills").value,
-           experience: $("#li-exp").value, ticked: state.liTicked || [] };
+/* ------------------------------------------------------------------ employers' own job boards */
+async function boardFindOpen() {
+  const ta = $("#bf-names");
+  if (ta.value.trim()) return;
+  try { ta.value = (await api("/api/jobs/boards/candidates")).names.join("\n"); } catch { /* leave it empty */ }
 }
-function liCounts() {
-  const hn = $("#li-headline").value.length, an = $("#li-about").value.length;
-  $("#li-head-n").textContent = `${hn} / 220`; $("#li-head-n").classList.toggle("over", hn > 220);
-  $("#li-about-n").textContent = `${an.toLocaleString("en-GB")} / 2,600 · first 265 show before "see more"`; $("#li-about-n").classList.toggle("over", an > 2600);
+async function boardFind() {
+  const btn = $("#bf-go"), out = $("#bf-result");
+  const names = $("#bf-names").value.split("\n").map(x => x.trim()).filter(Boolean);
+  if (!names.length) return toast("Add at least one employer.", true);
+  btn.disabled = true; out.replaceChildren(h("div", { class: "hint", text: `Checking ${names.length} employer${names.length === 1 ? "" : "s"}…` }));
+  try {
+    const { job_id } = await api("/api/jobs/boards/discover", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ names }) });
+    let j;
+    for (;;) { await new Promise(r => setTimeout(r, 1500)); j = await api(`/api/tasks/${job_id}`);
+      if (j.status !== "running") break; out.replaceChildren(h("div", { class: "hint", text: j.stage })); }
+    if (j.status === "error") throw new Error(j.error);
+    const found = j.result.found;
+    if (!found.length) { out.replaceChildren(h("div", { class: "hint", text: "No company boards found for these. Many employers use systems without a public feed (for example Workday), so their jobs still arrive through the job boards." })); return; }
+    const have = new Set($("#s-boards").value.split("\n").map(x => x.trim()));
+    const boxes = found.map(f => h("label", { class: "bf-row" }, h("input", { type: "checkbox", value: f.board, checked: !have.has(f.board), disabled: have.has(f.board) }),
+      h("span", {}, h("b", { text: f.company }), ` · ${f.jobs} open job${f.jobs === 1 ? "" : "s"} · `, h("code", { text: f.board }), have.has(f.board) ? " (already added)" : "")));
+    out.replaceChildren(h("div", { class: "hint", text: `Found ${found.length} of ${j.result.checked}:` }), ...boxes,
+      h("button", { class: "btn small primary", type: "button", onclick: () => {
+        const add = boxes.map(b => b.querySelector("input")).filter(i => i.checked && !i.disabled).map(i => i.value);
+        const cur = $("#s-boards").value.split("\n").map(x => x.trim()).filter(Boolean);
+        $("#s-boards").value = [...new Set([...cur, ...add])].join("\n");
+        const src = $('[data-src="ats"]'); if (src) src.checked = true;
+        toast(`Added ${add.length} board${add.length === 1 ? "" : "s"}. Save & scan to pull their jobs.`);
+      } }, "Add selected to Company boards"));
+  } catch (e) { out.replaceChildren(h("div", { class: "callout bad", text: e.message })); }
+  finally { btn.disabled = false; }
+}
+
+/* ------------------------------------------------------------------ LinkedIn coach */
+// One step at a time: each step checks one part of your profile, can offer AI options written only from your
+// facts, and adds what's left to a running to-do list.
+const LI_HELP = {
+  url: ["Your profile link", "Paste your LinkedIn link. A link with just your name looks tidier on a CV than one ending in random numbers."],
+  target: ["The role you want to be found for", "Everything after this is checked against it: the headline, About, skills and experience."],
+  strengths: ["Strengths to lead with", "Two or three things you want a recruiter to notice first. Pick ones your jobs ask for and you can talk about."],
+  headline: ["Your headline", "It shows next to your name in every search. A strong shape: role | 2 or 3 key skills | one result."],
+  photo: ["Profile photo", "Profiles with a clear photo get far more views from recruiters."],
+  banner: ["Banner", "The strip behind your photo. One line saying what you do, or a line of proof, works better than a stock image."],
+  featured: ["Featured work", "Pin one piece of real work near the top: a project, case study or portfolio link."],
+  spelling: ["Spelling & grammar", "Checked in UK English across your headline, About and experience."],
+  cv_match: ["Matches your CV", "Recruiters compare your LinkedIn with your CV. Titles, employers and numbers should agree."],
+  about: ["About", "Only about the first 265 characters show before 'see more', so lead with who you are and your strongest result."],
+  experience: ["Experience", "Paste your Experience section. Roles should show results with numbers and the tools you used."],
+  skills: ["Skills", "Recruiters filter by skills. List the in-demand ones you really have first."],
+  recs: ["Recommendations", "Two or more recent recommendations from managers or senior colleagues add trust."],
+  age: ["Age-bias signals", "Dates and phrases that can quietly count against experienced candidates."],
+  todo: ["Your to-do list", "Everything left to change on LinkedIn, in step order."],
+};
+const LI_FIELD = { headline: ["headline", 2, 220], about: ["about", 10, 2600], experience: ["experience", 10, 15000], skills: ["skills", 4, 4000] };
+const LI_OPTIONS = { strengths: "Suggest strengths", headline: "Suggest headlines", banner: "Suggest banner lines", about: "Draft About sections", experience: "Suggest a description for your latest role", recs: "Draft a request message" };
+const liIcon = st => ({ done: "✓", todo: "!", open: "" }[st] ?? "");
+function liGauge(score) {
+  const r = 52, len = Math.PI * r, k = Math.max(0, Math.min(100, score || 0)) / 100;
+  return `<svg viewBox="0 0 128 76" class="li-gauge-svg" role="img" aria-label="Profile strength ${score} out of 100">
+    <path d="M12 66 A52 52 0 0 1 116 66" fill="none" stroke="#e6e9ee" stroke-width="12" stroke-linecap="round"/>
+    <path d="M12 66 A52 52 0 0 1 116 66" fill="none" stroke="${scoreColor(score)}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(len * k).toFixed(1)} ${len.toFixed(1)}"/>
+    <text x="64" y="62" text-anchor="middle" font-size="22" font-weight="700" fill="currentColor">${score ?? 0}</text></svg>`;
 }
 async function loadLinkedin() {
   try {
-    const d = await api("/api/linkedin"), p = d.profile || {};
-    $("#li-headline").value = p.headline || ""; $("#li-about").value = p.about || "";
-    $("#li-skills").value = p.skills || ""; $("#li-exp").value = p.experience || "";
-    state.liTicked = p.ticked || [];
-    liCounts();
-    if (d.result) renderLinkedin(d.result);
-  } catch (e) { toast(e.message, true); }
+    const d = await api("/api/linkedin");
+    state.li = { profile: d.profile || {}, coach: { step: "url", ticked: [], ...(d.coach || {}) }, result: d.coach_result || null, opts: {} };
+    if (!state.li.coach.target) state.li.coach.target = (state.jobSettings?.titles || [])[0] || "";
+    await liSave(false);
+  } catch (e) { $("#li-stage").replaceChildren(h("div", { class: "callout bad", text: e.message })); }
 }
-async function checkLinkedin() {
-  const btn = $("#li-check"); btn.disabled = true;
-  try { renderLinkedin(await api("/api/linkedin/check", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(liProfile()) })); }
-  catch (e) { toast(e.message, true); } finally { btn.disabled = false; }
+async function liSave(render = true) {
+  const L = state.li;
+  try { L.result = await api("/api/linkedin/coach", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile: L.profile, coach: L.coach }) }); }
+  catch (e) { toast(e.message, true); }
+  renderLiRail(); if (render !== false) renderLiStep(); else renderLiStep();
 }
-function renderLinkedin(r) {
-  const icon = { pass: "✓", warn: "⚠", fail: "✗", manual: "○" };
-  const groups = [...new Set(r.items.map(i => i.group))];
-  const col = scoreColor(r.score);
-  $("#li-results").replaceChildren(
-    h("div", { class: "li-score" }, h("b", { text: `${r.score}`, style: `color:${col}` }), h("span", { text: "/ 100 profile strength" }),
-      r.targets?.length ? h("small", { class: "muted", text: `Checked against: ${r.targets.join(", ")}` }) : null),
-    ...groups.map(g => h("div", { class: "li-group" }, h("div", { class: "sec-title", text: g }),
-      ...r.items.filter(i => i.group === g).map(i => h("div", { class: `li-item st-${i.status}` },
-        i.status === "manual" || (i.group === "Settings" && i.id !== "url")
-          ? h("input", { type: "checkbox", checked: i.status === "pass", "aria-label": i.title, onchange: ev => {
-              const t = new Set(state.liTicked || []); ev.target.checked ? t.add(i.id) : t.delete(i.id); state.liTicked = [...t]; checkLinkedin(); } })
-          : h("span", { class: "li-ic", text: icon[i.status] }),
-        h("div", {}, h("b", { text: i.title }), i.detail ? h("div", { class: "muted", text: i.detail }) : null,
-          i.fix ? h("div", { class: "li-fix", text: i.fix }) : null))))),
-    r.demand?.length ? h("div", { class: "li-group" }, h("div", { class: "sec-title", text: "What your target jobs ask for" }),
-      h("table", { class: "li-demand" }, h("tr", {}, h("th", { text: "Skill" }), h("th", { text: "Jobs" }), h("th", { text: "In your facts" }), h("th", { text: "On profile" })),
-        ...r.demand.map(d => h("tr", {}, h("td", { text: d.term }), h("td", { text: d.jobs }),
-          h("td", { text: d.in_bank ? "yes" : "no", class: d.in_bank ? "ok" : "muted" }),
-          h("td", { text: d.on_profile ? "yes" : d.in_bank ? "add it" : "—", class: d.on_profile ? "ok" : d.in_bank ? "bad" : "muted" })))),
-      h("p", { class: "hint", text: "Only add a skill to LinkedIn if you can talk about using it. Skills marked \"no\" aren't in your facts." })) : null);
+function renderLiRail() {
+  const L = state.li, steps = L.result?.steps || [];
+  const done = steps.filter(s => s.status === "done" && s.id !== "todo").length;
+  $("#li-gauge").innerHTML = liGauge(L.result?.score ?? 0);
+  $("#li-gauge").append(h("div", { class: "li-gauge-label" }, h("b", { text: "Profile strength" }), h("small", { class: "muted", text: `${done} of ${steps.length - 1} steps done` })));
+  $("#li-steps").replaceChildren(...steps.map((s, i) => h("li", {},
+    h("button", { class: `li-step st-${s.status}` + (L.coach.step === s.id ? " cur" : ""), "aria-current": L.coach.step === s.id ? "step" : null,
+      onclick: () => { L.coach.step = s.id; liSave(); } },
+      h("span", { class: "li-n", text: String(i + 1) }), h("span", { class: "li-t", text: s.title }), h("span", { class: "li-st", text: liIcon(s.status) })))));
 }
-async function suggestLinkedin() {
-  const btn = $("#li-suggest"), box = $("#li-drafts");
-  btn.disabled = true; box.replaceChildren(h("div", { class: "callout info", text: "Writing from your facts…" }));
-  try {
-    const r = await api("/api/linkedin/suggest", { method: "POST" });
-    const use = (sel, text) => h("button", { class: "linkish", onclick: () => { $(sel).value = text; liCounts(); toast("Copied in. Check it, then run the check again."); } }, "Use this");
-    box.replaceChildren(h("div", { class: "li-drafts" },
-      h("div", { class: "sec-title", text: "Headline options" }),
-      ...r.headlines.map(x => h("div", { class: "li-draft" }, h("p", { text: x }), h("small", { class: "muted", text: `${x.length} / 220 ` }), use("#li-headline", x))),
-      h("div", { class: "sec-title", text: "About" }),
-      h("div", { class: "li-draft" }, h("p", { class: "pre", text: r.about }), h("small", { class: "muted", text: `${r.about.length.toLocaleString("en-GB")} / 2,600 ` }), use("#li-about", r.about)),
-      ...(r.warnings || []).map(w => h("div", { class: "ewarn", text: "⚠ " + w })),
-      h("p", { class: "hint", text: "Written only from your facts. Read it through and make it sound like you before posting." })));
-  } catch (e) { box.replaceChildren(h("div", { class: "callout bad", text: e.message })); }
-  finally { btn.disabled = false; }
+function liGo(delta) {
+  const L = state.li, ids = (L.result?.steps || []).map(s => s.id), i = ids.indexOf(L.coach.step);
+  L.coach.step = ids[Math.max(0, Math.min(ids.length - 1, i + delta))]; liSave();
+}
+function renderLiStep() {
+  const L = state.li, step = L.coach.step, steps = L.result?.steps || [];
+  const idx = steps.findIndex(s => s.id === step), S = steps[idx] || { items: [] };
+  const [title, help] = LI_HELP[step] || [S.title, ""];
+  const body = [];
+  // the step's own input
+  if (step === "url" || step === "target" || step === "strengths") {
+    const inp = h("input", { class: "input", value: L.coach[step] || "", placeholder: { url: "https://www.linkedin.com/in/firstname-lastname/", target: "e.g. Senior Data Engineer", strengths: "e.g. Spark pipelines, Python data engineering, leading production systems" }[step] });
+    inp.addEventListener("change", () => { L.coach[step] = inp.value.trim(); liSave(); });
+    body.push(inp);
+    if (step === "target" && (L.result?.targets || []).length) body.push(h("div", { class: "li-chips" }, h("small", { class: "muted", text: "From your job search: " }),
+      ...L.result.targets.map(t => h("button", { class: "chip", onclick: () => { L.coach.target = t; liSave(); } }, t))));
+    if (step === "strengths") {
+      const have = (L.result?.demand || []).filter(d => d.in_bank).slice(0, 10);
+      if (have.length) body.push(h("div", { class: "li-chips" }, h("small", { class: "muted", text: "In demand and in your facts: " }),
+        ...have.map(d => h("button", { class: "chip", title: `${d.jobs} jobs ask for this`, onclick: () => {
+          const cur = (L.coach.strengths || "").split(",").map(x => x.trim()).filter(Boolean);
+          if (!cur.includes(d.term)) cur.push(d.term); L.coach.strengths = cur.slice(0, 4).join(", "); liSave(); } }, d.term))));
+    }
+  }
+  if (LI_FIELD[step]) {
+    const [key, rows, max] = LI_FIELD[step];
+    const n = h("small", { class: "muted" });
+    const ta = h("textarea", { class: "input", rows, maxlength: max * 2 });
+    ta.value = L.profile[key] || "";
+    const count = () => { n.textContent = `${ta.value.length.toLocaleString("en-GB")} / ${max.toLocaleString("en-GB")}`; n.classList.toggle("over", ta.value.length > max); };
+    ta.addEventListener("input", count); ta.addEventListener("change", () => { L.profile[key] = ta.value; liSave(); }); count();
+    body.push(h("label", { class: "field" }, `Paste your ${key === "skills" ? "skills (one per line or comma-separated)" : key} `, n, ta));
+  }
+  if (step === "recs") {
+    const p = h("input", { class: "input", placeholder: "Who will you ask? e.g. your line manager", value: L.opts.person || "" });
+    p.addEventListener("change", () => { L.opts.person = p.value.trim(); });
+    body.push(h("label", { class: "field" }, "Person to ask", p));
+  }
+  // the checks for this step
+  if (step !== "todo" && S.items.length) body.push(h("ul", { class: "li-checks" }, ...S.items.map(it => h("li", { class: `st-${it.status}` },
+    it.tick ? h("input", { type: "checkbox", checked: it.status === "pass", "aria-label": it.title, onchange: ev => {
+      const t = new Set(L.coach.ticked || []); ev.target.checked ? t.add(it.tick) : t.delete(it.tick); L.coach.ticked = [...t]; liSave(); } })
+      : h("span", { class: "li-ic", text: { pass: "✓", warn: "⚠", fail: "✗", open: "○", manual: "○" }[it.status] || "○" }),
+    h("div", {}, h("b", { text: it.title }), it.detail ? h("div", { class: "muted", text: it.detail }) : null, it.fix ? h("div", { class: "li-fix", text: it.fix }) : null)))));
+  if (step === "skills" && (L.result?.demand || []).length) body.push(h("table", { class: "li-demand" },
+    h("tr", {}, h("th", { text: "Skill" }), h("th", { text: "Jobs asking" }), h("th", { text: "In your facts" }), h("th", { text: "On profile" })),
+    ...L.result.demand.map(d => h("tr", {}, h("td", { text: d.term }), h("td", { text: d.jobs }), h("td", { text: d.in_bank ? "yes" : "no", class: d.in_bank ? "ok" : "muted" }),
+      h("td", { text: d.on_profile ? "yes" : d.in_bank ? "add it" : "—", class: d.on_profile ? "ok" : d.in_bank ? "bad" : "muted" })))),
+    h("p", { class: "hint", text: "Only add a skill if you can talk about using it. Skills marked “no” aren't in your facts." }));
+  if (step === "todo") {
+    const todo = L.result?.todo || [];
+    body.push(todo.length ? h("ol", { class: "li-todo" }, ...todo.map(t => h("li", {},
+      h("button", { class: "linkish", onclick: () => { L.coach.step = t.step; liSave(); }, text: (LI_HELP[t.step] || [t.step])[0] }), ": ", t.text)))
+      : h("div", { class: "callout good", text: "Nothing left to change. Your profile covers every step." }));
+    if (todo.length) body.push(h("button", { class: "btn small", onclick: () => { navigator.clipboard?.writeText(todo.map((t, i) => `${i + 1}. ${(LI_HELP[t.step] || [t.step])[0]}: ${t.text}`).join("\n")); toast("Copied your to-do list."); } }, "Copy to-do list"));
+  }
+  // AI options
+  if (LI_OPTIONS[step]) body.push(liOptionsBox(step));
+  $("#li-stage").replaceChildren(
+    h("div", { class: "li-head" }, h("small", { class: "muted", text: `Step ${idx + 1} of ${steps.length}` }), h("h2", { text: title }), help ? h("p", { class: "hint", text: help }) : null),
+    ...body,
+    h("div", { class: "li-nav" },
+      h("button", { class: "btn ghost", disabled: idx <= 0, onclick: () => liGo(-1) }, "← Back"),
+      idx < steps.length - 1 ? h("button", { class: "btn primary", onclick: () => liGo(1) }, "Next →") : null));
+}
+function liOptionsBox(step) {
+  const L = state.li, got = L.opts[step];
+  const emph = h("input", { class: "input", placeholder: "More emphasis on… (e.g. leadership, Azure, impact on store teams)" });
+  const run = async btn => {
+    btn.disabled = true; const label = btn.textContent; btn.textContent = "Writing from your facts…";
+    try {
+      L.opts[step] = await api("/api/linkedin/options", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step, emphasis: emph.value.trim(), person: L.opts.person || "", profile: L.profile, coach: L.coach }) });
+      renderLiStep();
+    } catch (e) { toast(e.message, true); btn.disabled = false; btn.textContent = label; }
+  };
+  const use = text => {
+    if (step === "strengths") L.coach.strengths = text;
+    else if (LI_FIELD[step]) L.profile[LI_FIELD[step][0]] = text;
+    else { navigator.clipboard?.writeText(text); toast("Copied. Paste it into LinkedIn."); return; }
+    toast("Added. Paste it into LinkedIn too, then check it here."); liSave();
+  };
+  const first = h("button", { class: "btn small primary", onclick: ev => run(ev.target) }, LI_OPTIONS[step]);
+  return h("div", { class: "li-opts" },
+    h("div", { class: "sec-title", text: "Suggestions" }),
+    got ? h("ol", { class: "li-opt-list" }, ...got.options.map((o, i) => h("li", {},
+      h("p", { class: step === "about" || step === "experience" || step === "recs" ? "pre" : "", text: o }),
+      ...(got.warnings?.[i] || []).map(w => h("div", { class: "ewarn", text: "⚠ " + w })),
+      h("button", { class: "btn small", onclick: () => use(o) }, LI_FIELD[step] || step === "strengths" ? "Use this" : "Copy")))) : first,
+    got ? h("div", { class: "li-refine" }, emph, h("button", { class: "btn small", onclick: ev => run(ev.target) }, "Suggest again")) : null,
+    h("p", { class: "hint", text: "Written only from your facts. Make it sound like you before posting." }));
 }
 
 /* ------------------------------------------------------------------ job search settings */
@@ -3376,9 +3493,9 @@ function wire() {
   $("#keys-save").addEventListener("click", saveKeys);
   $("#scan-btn").addEventListener("click", scanJobs);
   setupJobQuery();
-  $("#li-check").addEventListener("click", checkLinkedin);
-  $("#li-suggest").addEventListener("click", suggestLinkedin);
-  ["#li-headline", "#li-about"].forEach(sel => $(sel).addEventListener("input", liCounts));
+  $("#board-find").addEventListener("toggle", e => { if (e.target.open) boardFindOpen(); });
+  $("#bf-go").addEventListener("click", boardFind);
+  $("#li-restart").addEventListener("click", () => { if (!state.li) return; state.li.coach.step = "url"; state.li.opts = {}; liSave(); });
   $('[data-src="jobserve"]').addEventListener("change", event => {
     $("#jobserve-feed-settings").hidden = !event.currentTarget.checked;
   });

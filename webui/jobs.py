@@ -374,6 +374,75 @@ def ats_board(board: str) -> list[dict]:
     return out
 
 
+_CO_STOP = {"ltd", "limited", "plc", "llp", "uk", "group", "the", "inc", "llc", "co", "company", "holdings", "and"}
+
+
+def _co_words(name: str) -> list[str]:
+    return [w for w in re.findall(r"[a-z0-9]+", (name or "").lower().replace("&", " and ")) if w not in _CO_STOP]
+
+
+def _slug_candidates(name: str) -> list[str]:
+    w = _co_words(name)
+    if not w:
+        return []
+    out = ["".join(w), "-".join(w)]
+    if len(w) > 1 and len(w[0]) >= 5:
+        out.append(w[0])  # "Monzo Bank" -> "monzo"
+    return list(dict.fromkeys(x for x in out if len(x) >= 3))
+
+
+def _same_company(name: str, found: str) -> bool:
+    a, b = set(_co_words(name)), set(_co_words(found))
+    return bool(a and b) and (a <= b or b <= a or len(a & b) >= 2)
+
+
+def _probe(kind: str, slug: str, name: str) -> dict | None:
+    """Is there a {kind} job board for this company under this slug? Only a confident match counts."""
+    urls = {"greenhouse": f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
+            "lever": f"https://api.lever.co/v0/postings/{slug}?mode=json&limit=100",
+            "ashby": f"https://api.ashbyhq.com/posting-api/job-board/{slug}",
+            "workable": f"https://apply.workable.com/api/v1/widget/accounts/{slug}"}
+    try:
+        req = urllib.request.Request(urls[kind], headers={"User-Agent": UA, "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            d = json.loads(r.read(3_000_000) or b"null")
+    except Exception:  # noqa: BLE001 - 404 = no board here
+        return None
+    if kind == "greenhouse":
+        jobs = d.get("jobs") or []
+        board_name = ((jobs[0].get("company_name") if jobs else "") or "")
+        ok = _same_company(name, board_name) if board_name else slug == "".join(_co_words(name))
+    elif kind == "workable":
+        jobs, board_name = d.get("jobs") or [], d.get("name") or ""
+        ok = _same_company(name, board_name)
+    else:  # Lever and Ashby don't return the company's name: accept only the full name as the slug
+        jobs = d if kind == "lever" else (d.get("jobs") or [])
+        board_name = name
+        ok = slug in ("".join(_co_words(name)), "-".join(_co_words(name)))
+    if not ok or not isinstance(jobs, list) or not jobs:
+        return None
+    return {"board": f"{kind}:{slug}", "company": board_name or name, "jobs": len(jobs), "asked": name}
+
+
+def discover_boards(names: list[str], progress=lambda *a: None) -> list[dict]:
+    """Find the employers' own job boards (Greenhouse, Lever, Ashby, Workable) for these company names."""
+    from concurrent.futures import ThreadPoolExecutor
+    names = list(dict.fromkeys(n.strip() for n in names if n and n.strip() and n.strip().lower() not in ("unknown employer",)))[:60]
+    if MOCK:
+        return [{"board": f"greenhouse:{''.join(_co_words(n))}", "company": n, "jobs": 12, "asked": n}
+                for n in names if "monzo" in n.lower() or "ocado" in n.lower()]
+    tasks = [(k, slug, n) for n in names for slug in _slug_candidates(n) for k in ("greenhouse", "lever", "ashby", "workable")]
+    found, done = {}, 0
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        for res in pool.map(lambda t: _probe(*t), tasks):
+            done += 1
+            if done % 12 == 0:
+                progress(f"Checked {done} of {len(tasks)} possible boards", 5 + 90 * done // max(1, len(tasks)))
+            if res and res["asked"] not in found:
+                found[res["asked"]] = res
+    return sorted(found.values(), key=lambda r: -r["jobs"])
+
+
 def nhs_search(title: str, loc: dict | None, s: dict) -> list[dict]:
     import xml.etree.ElementTree as ET
     if not loc:

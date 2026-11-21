@@ -249,6 +249,13 @@
       </div>
       <label class="field">Exclude titles containing<input class="input" id="s-exclude" placeholder="graduate, apprentice"></label>
       <label class="field">Company boards <span class="muted">(e.g. greenhouse:monzo)</span><textarea id="s-boards" rows="3" placeholder="greenhouse:companyname&#10;lever:companyname&#10;ashby:companyname"></textarea></label>
+      <details class="board-find" id="board-find">
+        <summary>Find employers' own job boards automatically</summary>
+        <p class="hint">Jobs straight from the company's careers page, often before they reach job boards. I check Greenhouse, Lever, Ashby and Workable for each employer and only keep confident matches.</p>
+        <label class="field">Employers to look for <span class="muted">(one per line)</span><textarea id="bf-names" rows="5" placeholder="Monzo&#10;Ocado Technology&#10;Deliveroo"></textarea></label>
+        <button class="btn small" type="button" id="bf-go">Find their job boards</button>
+        <div id="bf-result" role="status"></div>
+      </details>
       <button class="btn small" id="save-search-btn" type="button">Save search</button>
     </section>
     <section class="step">
@@ -396,19 +403,13 @@
 </main>
 
 <main class="out-view" id="linkedin-view" hidden>
-  <section class="out-wrap li-wrap">
-    <div class="li-inputs">
-      <h2>Your LinkedIn profile</h2>
-      <p class="hint">Copy each part from your profile and paste it here. I check it against the skills that keep coming up in the jobs you've scanned, and only suggest adding what your facts back up. Nothing is sent to LinkedIn.</p>
-      <label class="field">Headline <small class="muted" id="li-head-n"></small><input class="input" id="li-headline" maxlength="400" placeholder="The line under your name"></label>
-      <label class="field">About <small class="muted" id="li-about-n"></small><textarea class="input" id="li-about" rows="8" maxlength="4000"></textarea></label>
-      <label class="field">Skills <small class="muted">(one per line or comma-separated)</small><textarea class="input" id="li-skills" rows="4" maxlength="4000"></textarea></label>
-      <label class="field">Experience <small class="muted">(optional: paste the whole section)</small><textarea class="input" id="li-exp" rows="6" maxlength="15000"></textarea></label>
-      <div class="eact"><button class="btn primary" id="li-check">Check my profile</button>
-        <button class="btn" id="li-suggest" title="Headline options and an About section written only from your facts">Draft headline &amp; About with AI</button></div>
-      <div id="li-drafts"></div>
-    </div>
-    <div class="li-results" id="li-results"><div class="empty-detail muted">Paste your profile and choose Check my profile.</div></div>
+  <section class="out-wrap li-coach">
+    <aside class="li-rail" aria-label="Coach steps">
+      <div id="li-gauge"></div>
+      <ol id="li-steps" class="li-steps"></ol>
+      <button class="linkish" id="li-restart" type="button">Start again</button>
+    </aside>
+    <div class="li-stage" id="li-stage" aria-live="polite"><div class="empty-detail muted">Loading the LinkedIn coach…</div></div>
   </section>
 </main>
 

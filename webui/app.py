@@ -886,6 +886,79 @@ def linkedin_check(payload: dict):
     return result
 
 
+def _boards_job(job_id: str, names: list[str]):
+    job = JOBS[job_id]
+    try:
+        found = jobsrc.discover_boards(names, lambda stage, pct: job.update(stage=stage, progress=pct))
+        job.update(status="done", progress=100, stage="Done", result={"found": found, "checked": len(names)})
+    except Exception as e:  # noqa: BLE001
+        job.update(status="error", error=str(e))
+
+
+@app.get("/api/jobs/boards/candidates")
+def board_candidates():
+    """Employers worth looking up: the ones you've saved, applied to or rated well, then the commonest in your list."""
+    jobs = list((jobsrc.load_store().get("jobs") or {}).values())
+    have = {b.split(":", 1)[1] for b in jobsrc.get_settings().get("ats_boards") or []}
+    pri = lambda j: (j.get("status") in ("saved", "applied", "interview", "offer"), (j.get("fit") or {}).get("score") or (j.get("match") or {}).get("score") or 0)  # noqa: E731
+    seen, out = set(), []
+    for j in sorted(jobs, key=pri, reverse=True):
+        c = (j.get("company") or "").strip()
+        if c and c.lower() not in seen and c != "Unknown employer" and j.get("source") not in ("greenhouse", "lever", "ashby", "workable", "nhs", "ktp") \
+                and not any(sl in have for sl in jobsrc._slug_candidates(c)) and not re.search(r"recruit|agency|staffing|search|resourcing|talent|people|consult", c, re.I):
+            seen.add(c.lower()); out.append(c)
+        if len(out) >= 25:
+            break
+    return {"names": out}
+
+
+@app.post("/api/jobs/boards/discover")
+def board_discover(payload: dict):
+    names = [str(n)[:80] for n in (payload.get("names") or []) if str(n).strip()][:60]
+    if not names:
+        raise HTTPException(400, "Add at least one employer name.")
+    return {"job_id": _start(_boards_job, names)}
+
+
+def _clean_coach(c: dict) -> dict:
+    c = c or {}
+    return {"url": str(c.get("url") or "")[:300], "target": str(c.get("target") or "")[:200],
+            "strengths": str(c.get("strengths") or "")[:300], "step": str(c.get("step") or "url")[:20],
+            "ticked": [str(t)[:20] for t in (c.get("ticked") or [])][:20]}
+
+
+@app.post("/api/linkedin/coach")
+def linkedin_coach(payload: dict):
+    """The guided coach: saves what you've entered so far and returns every step's checks and your to-do list."""
+    profile, state = _clean_profile(payload.get("profile") or {}), _clean_coach(payload.get("coach") or {})
+    bank, text, terms, jobs, titles = _linkedin_inputs()
+    result = linkedin.coach(profile, state, bank, factbank.as_prompt(bank), terms, jobs, titles, text)
+    data = linkedin.load()
+    data.update(profile=profile, coach=state, coach_result=result)
+    store.save_json(linkedin.STATE, data)
+    return result
+
+
+@app.post("/api/linkedin/options")
+def linkedin_options(payload: dict):
+    """AI options for one coach step, written only from your facts."""
+    step = str(payload.get("step") or "")
+    if step not in linkedin.OPTIONS:
+        raise HTTPException(400, "No suggestions for that step.")
+    if engine.selected() == "none":
+        raise HTTPException(400, "No AI engine is set up.")
+    bank, text, terms, jobs, titles = _linkedin_inputs()
+    wanted = [d["term"] for d in linkedin.demand(jobs, terms) if d["in_bank"]][:10]
+    data = linkedin.load()
+    try:
+        return linkedin.options(step, factbank.as_prompt(bank), {f["id"]: f["text"] for f in bank},
+                                _clean_coach(payload.get("coach") or data.get("coach") or {}),
+                                _clean_profile(payload.get("profile") or data.get("profile") or {}), wanted,
+                                str(payload.get("emphasis") or "")[:300], str(payload.get("person") or "")[:100])
+    except engine.EngineError as e:
+        raise HTTPException(502, str(e)) from e
+
+
 @app.post("/api/linkedin/suggest")
 def linkedin_suggest():
     if engine.selected() == "none":
