@@ -183,20 +183,28 @@ def _read(req, timeout: int = 25, allow_partial: bool = False) -> bytes:
     allow_partial: for HTML pages whose content sits near the top (Work Hub puts every job card in
     roughly the first 90 KB of a 300 KB page), keep what arrived when the server cuts the page short."""
     import http.client
-    for attempt in (1, 2):
+    for attempt in (1, 2, 3):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return r.read()
-        except urllib.error.HTTPError:
+        except urllib.error.HTTPError as e:
+            # 429 / 503 = "slow down": wait as long as the site asks (within reason), then try again.
+            if e.code in (429, 503) and attempt < 3:
+                try:
+                    wait = float(e.headers.get("Retry-After") or 0)
+                except (TypeError, ValueError):
+                    wait = 0
+                time.sleep(min(max(wait, 6.0 * attempt), 30.0))
+                continue
             raise
         except http.client.IncompleteRead as e:
             if allow_partial and len(e.partial) > 20_000:
                 return e.partial
-            if attempt == 2:
+            if attempt >= 2:
                 raise
             time.sleep(1.5)
         except (ConnectionError, TimeoutError, urllib.error.URLError):
-            if attempt == 2:
+            if attempt >= 2:
                 raise
             time.sleep(1.5)
     return b""
@@ -1167,6 +1175,7 @@ def scan(progress, bank_text: str) -> dict:
     nhs_successes = 0
     nhs_missing = 0
     nhs_bad_places: dict[str, int] = {}
+    nhs_total = sum(1 for t in tasks if t[0] == "NHS Jobs")
     for i, (name, fn, title, loc) in enumerate(tasks):
         if name in failed_sources:
             continue
@@ -1190,7 +1199,13 @@ def scan(progress, bank_text: str) -> dict:
                                                              r["description"].lower())) >= 3]
             found += rows
         except Exception as e:  # report once per source and move on
-            if name == "NHS Jobs" and isinstance(e, urllib.error.HTTPError) and e.code == 404:
+            if isinstance(e, urllib.error.HTTPError) and e.code == 429:
+                # Still busy after waiting: stop asking this scan, keep what we already have.
+                failed_sources.add(name)
+                done = nhs_successes if name == "NHS Jobs" else None
+                errors.append(f"{name} asked us to slow down" + (f" after {done} of {nhs_total} searches" if done is not None else "")
+                              + "; what it had already returned is kept, and the next scan will try again.")
+            elif name == "NHS Jobs" and isinstance(e, urllib.error.HTTPError) and e.code == 404:
                 nhs_missing += 1
                 nhs_bad_places.setdefault(loc["name"] if loc else "remote", 0)
                 nhs_bad_places[loc["name"] if loc else "remote"] += 1
@@ -1200,7 +1215,8 @@ def scan(progress, bank_text: str) -> dict:
                 failed_sources.add(name)
                 errors.append(f"{name}: {e}")
         if not MOCK:
-            time.sleep(0.25)
+            # NHS Jobs rate-limits bursts, so space its searches out; other sources are fine at a quick pace.
+            time.sleep(1.5 if name == "NHS Jobs" else 0.25)
     if nhs_missing:
         titles_n = len(s.get("titles") or []) or 1
         bad = [p for p, n in nhs_bad_places.items() if n >= titles_n]  # every title failed for this place

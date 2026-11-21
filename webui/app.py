@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile  # noqa: E402
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile  # noqa: E402
 from fastapi.responses import FileResponse, JSONResponse, Response  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
@@ -1683,11 +1683,52 @@ async def _always_fresh_page(request, call_next):
     return response
 
 
+
+@app.post("/api/shutdown")
+def shutdown(request: Request):
+    """Let a newer copy of the app take over the port. Only from this PC, and only with the app's own
+    header (a web page can't send it without a CORS preflight, which this app never allows)."""
+    if request.client.host not in ("127.0.0.1", "::1") or request.headers.get("X-CV-Tailor") != "takeover":
+        raise HTTPException(403, "not allowed")
+    if _busy_now():
+        raise HTTPException(409, "busy tailoring; try again shortly")
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return {"stopping": True}
+
+
 app.mount("/", StaticFiles(directory=str(Path(__file__).parent / "static"), html=True), name="static")
 
 
 def _code_stamp() -> tuple:
     return tuple(sorted((p.name, p.stat().st_mtime_ns) for p in store.WEBUI.glob("*.py")))
+
+
+def _busy_now() -> bool:
+    return any(j.get("status") == "running" for j in JOBS.values())
+
+
+def _take_over_port(port: int) -> None:
+    """If an older copy of the app still holds the port (left running in the background), ask it to stop."""
+    import urllib.request
+    try:
+        urllib.request.urlopen(f"http://127.0.0.1:{port}/api/build", timeout=2).read()
+    except Exception:  # noqa: BLE001 - port is free
+        return
+    print("  An older copy of CV Tailor is still running: asking it to stop...")
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/api/shutdown", method="POST", data=b"",
+                                 headers={"X-CV-Tailor": "takeover"})
+    try:
+        urllib.request.urlopen(req, timeout=5).read()
+    except Exception:  # noqa: BLE001
+        print(f"  It didn't stop (it may be too old to understand the request). Close it, or run in PowerShell:\n"
+              f"    Stop-Process -Id (Get-NetTCPConnection -LocalPort {port} -State Listen).OwningProcess -Force")
+        return
+    for _ in range(20):
+        time.sleep(0.5)
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/api/build", timeout=1).read()
+        except Exception:  # noqa: BLE001 - gone
+            return
 
 
 def _busy(port: int) -> bool:
@@ -1735,6 +1776,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("CV_TAILOR_PORT", "8765"))
     if "--serve" in sys.argv or os.environ.get("CV_TAILOR_NO_RELOAD") == "1":
         import uvicorn
+        _take_over_port(port)
         print(f"\n  CV Tailor running at http://127.0.0.1:{port}\n  Engine: {engine.selected()}\n")
         uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
     else:
