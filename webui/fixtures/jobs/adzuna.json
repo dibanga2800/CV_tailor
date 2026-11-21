@@ -1,0 +1,36 @@
+{
+ "results": [
+  {
+   "id": "4900111",
+   "title": "<strong>Data Engineering</strong> Lead",
+   "company": {
+    "display_name": "Pennine Housing Trust"
+   },
+   "location": {
+    "display_name": "Leeds, West Yorkshire"
+   },
+   "description": "Own our Azure data platform supporting 30,000 homes. Python, SQL, Power BI...",
+   "salary_min": 52000,
+   "salary_max": 58000,
+   "salary_is_predicted": "0",
+   "created": "2026-11-17T09:00:00Z",
+   "redirect_url": "https://www.adzuna.co.uk/jobs/land/ad/4900111"
+  },
+  {
+   "id": "4900222",
+   "title": "Analytics Engineer",
+   "company": {
+    "display_name": "Northwind Energy"
+   },
+   "location": {
+    "display_name": "Manchester"
+   },
+   "description": "dbt, Snowflake, Airflow and Looker. Build models for the analytics team...",
+   "salary_min": 55000,
+   "salary_max": 65000,
+   "salary_is_predicted": "1",
+   "created": "2026-10-01T09:00:00Z",
+   "redirect_url": "https://www.adzuna.co.uk/jobs/land/ad/4900222"
+  }
+ ]
+}

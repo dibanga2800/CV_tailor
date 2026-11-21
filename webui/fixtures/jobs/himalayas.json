@@ -1,0 +1,16 @@
+{
+  "jobs": [
+    {
+      "guid": "sample-himalayas-1",
+      "title": "Data Engineer",
+      "companyName": "Example Research",
+      "employmentType": "Full Time",
+      "minSalary": 55000,
+      "maxSalary": 65000,
+      "currency": "GBP",
+      "salaryPeriod": "annual",
+      "description": "<p>Build and monitor data pipelines supporting research and reporting.</p><p>Work with SQL and Python and document how changes affect downstream teams. This example is for local testing.</p>",
+      "applicationLink": "https://himalayas.app/companies/example-research/jobs/data-engineer"
+    }
+  ]
+}

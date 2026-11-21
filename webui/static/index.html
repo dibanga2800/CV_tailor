@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CV Tailor | Application workspace</title>
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <img class="brand-mark" src="favicon.png" width="36" height="36" alt="">
+    <span class="brand-name">CV Tailor</span>
+  </div>
+  <nav class="views" aria-label="Workspace">
+    <button class="view-btn active" data-view="editor" aria-current="page">Tailor &amp; apply</button>
+    <button class="view-btn" data-view="jobs">Find jobs</button>
+    <button class="view-btn" data-view="ats">ATS check</button>
+    <button class="view-btn" data-view="outcomes">Applications</button>
+    <button class="view-btn" data-view="linkedin">LinkedIn</button>
+  </nav>
+  <div class="topbar-right">
+    <button id="db-pill" class="pill" title="Where your data is saved">Storage…</button>
+    <button id="engine-pill" class="pill" title="Manage AI providers">AI providers</button>
+  </div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main class="workspace" id="editor-view">
+  <!-- ======================= LEFT: inputs ======================= -->
+  <aside class="rail" aria-label="Inputs">
+    <div class="workspace-tools">
+      <div class="workspace-heading">
+        <h1>Tailor a CV</h1>
+        <button id="new-btn" class="btn small">New draft</button>
+      </div>
+      <select id="history" aria-label="Open a saved draft">
+        <option value="">Open a saved draft…</option>
+      </select>
+    </div>
+    <section class="step" id="step-master">
+      <div class="step-head"><h2>Master CV</h2><span id="master-state" class="tag muted">Not uploaded</span></div>
+      <label class="drop" data-target="master-file">
+        <input type="file" id="master-file" accept=".pdf,.docx,.txt,.md,.tex" hidden>
+        <span class="drop-icon">⇪</span>
+        <span class="drop-text"><strong>Upload master CV</strong><br>PDF, Word, LaTeX or text</span>
+      </label>
+      <div class="row-actions">
+        <button class="btn link" id="facts-btn" disabled>View fact bank</button>
+        <button class="btn link" id="master-paste-btn">Paste instead</button>
+      </div>
+      <textarea id="master-paste" class="paste" rows="6" placeholder="Paste your full CV text…" hidden></textarea>
+      <button class="btn small" id="master-paste-save" hidden>Save pasted CV</button>
+    </section>
+
+    <section class="step" id="step-jd">
+      <div class="step-head"><h2>Job description</h2><span id="jd-state" class="tag muted">Empty</span></div>
+      <div class="seg" role="tablist">
+        <button role="tab" class="seg-btn active" data-mode="file" data-for="jd">Upload</button>
+        <button role="tab" class="seg-btn" data-mode="text" data-for="jd">Paste</button>
+      </div>
+      <label class="drop" data-target="jd-file" id="jd-drop">
+        <input type="file" id="jd-file" accept=".pdf,.docx,.txt,.md" hidden>
+        <span class="drop-icon">⇪</span>
+        <span class="drop-text"><strong>Upload job description</strong><br>PDF, Word or text</span>
+      </label>
+      <textarea id="jd-text" class="paste" rows="7" placeholder="Paste the job description…" hidden></textarea>
+      <input id="source-url" class="input" type="url" placeholder="Advert URL (optional, for the tracker)">
+    </section>
+
+    <details class="step options-step" id="step-ps">
+      <summary class="step-head"><span class="step-label">Person specification</span><span id="ps-state" class="tag muted">Optional</span></summary>
+      <div class="seg" role="tablist">
+        <button role="tab" class="seg-btn active" data-mode="file" data-for="ps">Upload</button>
+        <button role="tab" class="seg-btn" data-mode="text" data-for="ps">Paste</button>
+      </div>
+      <label class="drop" data-target="ps-file" id="ps-drop">
+        <input type="file" id="ps-file" accept=".pdf,.docx,.txt,.md" hidden>
+        <span class="drop-icon">⇪</span>
+        <span class="drop-text"><strong>Drop the person spec here</strong><br>or click to browse</span>
+      </label>
+      <textarea id="ps-text" class="paste" rows="7" placeholder="Paste the person specification…" hidden></textarea>
+    </details>
+
+    <details class="step options-step" id="step-opts">
+      <summary class="step-head"><span class="step-label">Draft settings</span></summary>
+      <label class="field">Emphasis
+        <select id="tone">
+          <option value="balanced">Balanced</option>
+          <option value="technical">Technical depth</option>
+          <option value="leadership">Leadership &amp; delivery</option>
+          <option value="public-sector">Public sector (mirror the person spec)</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="opt-cover"> Write a cover letter</label>
+      <label class="check"><input type="checkbox" id="opt-statement"> Draft a supporting statement</label>
+      <label class="check"><input type="checkbox" id="opt-track" checked> Record in job_search_tracker.csv</label>
+      <label class="field">Notes for the writer <span class="muted">(optional)</span>
+        <textarea id="notes" rows="3" placeholder="e.g. Lead with the warehouse work. Don't mention the charity."></textarea>
+      </label>
+    </details>
+
+    <div class="rail-foot">
+      <button id="tailor-btn" class="btn primary block" disabled>Tailor my CV</button>
+      <p id="tailor-why" class="hint center">Upload your master CV and a JD to start.</p>
+      <a class="btn link mobile-jump" id="preview-link" href="#cv-editor" hidden>Go to CV preview ↓</a>
+    </div>
+  </aside>
+
+  <!-- ======================= CENTRE: editor ======================= -->
+  <section class="stage" id="cv-editor" aria-label="CV editor" tabindex="-1">
+    <div class="stage-bar" id="stage-bar" hidden>
+      <div class="stage-title">
+        <strong id="target-title">—</strong>
+        <span id="target-meta" class="muted"></span>
+      </div>
+      <a class="btn link mobile-jump" href="#insight">Go to review ↓</a>
+      <div class="stage-tools">
+        <select id="template" aria-label="CV design" title="Word design (all ATS-safe: one column, no tables)">
+          <option value="classic">Classic</option><option value="modern">Modern</option><option value="compact">Compact</option>
+          <option value="elegant">Elegant (serif)</option><option value="minimal">Minimal</option>
+        </select>
+        <div class="menu">
+          <button class="btn" id="design-btn" aria-expanded="false" title="Font, size, spacing, margins and what lands on each page">Design</button>
+          <div class="design-pop" id="design-pop" hidden></div>
+        </div>
+        <div class="swatches" role="radiogroup" aria-label="Accent colour">
+          <button class="swatch" data-color="#1f4e79" style="--c:#1f4e79" aria-label="Navy"></button>
+          <button class="swatch" data-color="#2a7d74" style="--c:#2a7d74" aria-label="Teal"></button>
+          <button class="swatch" data-color="#7a3b2e" style="--c:#7a3b2e" aria-label="Brick"></button>
+          <button class="swatch" data-color="#333333" style="--c:#333333" aria-label="Graphite"></button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="show-sources" checked><span>Sources</span></label>
+        <button class="btn apply-btn" id="apply-btn" hidden>Apply ▸</button>
+        <button class="btn" id="send-preview-btn">Final preview</button>
+        <button class="btn" id="save-btn" disabled>Save &amp; close</button>
+        <div class="menu">
+          <button class="btn primary" id="download-btn">Download ▾</button>
+          <div class="menu-list" id="download-list" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="draft-scorebar" class="draft-scorebar" role="status" hidden></div>
+    <div class="paper-wrap">
+      <section class="tailor-error callout bad" id="tailor-error" role="alert" hidden>
+        <strong>Tailoring stopped</strong>
+        <p id="tailor-error-message"></p>
+      </section>
+      <div id="empty" class="empty">
+        <div class="empty-card">
+          <img src="favicon.png" width="52" height="52" alt="">
+          <h2>Your draft preview</h2>
+          <p>Add your master CV and a job description to create a tailored draft.</p>
+          <ul class="preview-features">
+            <li><strong>Editable CV</strong><span>Review and refine before exporting</span></li>
+            <li><strong>Evidence</strong><span>Trace claims to your master CV</span></li>
+            <li><strong>Job match</strong><span>See which criteria you cover</span></li>
+          </ul>
+        </div>
+      </div>
+      <div id="progress" class="progress-card" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <div>
+          <strong id="progress-stage" role="status">Starting…</strong>
+          <div class="bar"><span id="progress-bar"></span></div>
+          <span class="muted" id="progress-time"></span>
+          <ul id="progress-attempts" class="progress-attempts" hidden></ul>
+        </div>
+      </div>
+      <div id="preview-bar" class="preview-bar" hidden>
+        <span id="preview-label"></span>
+        <button class="btn small primary" id="preview-restore">Restore this version</button>
+        <button class="btn small" id="preview-exit">Back to current</button>
+      </div>
+      <article id="paper" class="paper" hidden></article>
+    </div>
+  </section>
+
+  <!-- ======================= RIGHT: analysis ======================= -->
+  <aside class="insight" aria-label="Analysis" id="insight" hidden>
+    <nav class="tabs" aria-label="Draft tools">
+      <button class="tab active" data-tab="checks" aria-current="true">Review<span id="checks-count" class="count"></span></button>
+      <button class="tab" data-tab="match">Match</button>
+      <button class="tab" data-tab="assist">Assistant</button>
+      <button class="tab" data-tab="statement" id="statement-tab">Letters</button>
+      <button class="tab" data-tab="interview">Interview</button>
+      <button class="tab" data-tab="notes">Notes</button>
+      <button class="tab" data-tab="history">History</button>
+    </nav>
+    <div class="tab-body assist-body" id="tab-assist" hidden>
+      <div id="assist-feed" class="assist-feed"></div>
+      <div class="composer">
+        <div id="focus-pill" class="focus-pill" hidden></div>
+        <textarea id="assist-input" rows="3" placeholder="Ask for a change, e.g. 'tighten the summary to two sentences'"></textarea>
+        <button id="assist-send" class="btn primary small">Send</button>
+      </div>
+    </div>
+    <div class="tab-body" id="tab-match" hidden></div>
+    <div class="tab-body" id="tab-history" hidden></div>
+    <div class="tab-body" id="tab-checks"></div>
+    <div class="tab-body" id="tab-statement" hidden></div>
+    <div class="tab-body" id="tab-notes" hidden></div>
+    <div class="tab-body" id="tab-interview" hidden></div>
+  </aside>
+</main>
+
+
+<!-- ======================= JOBS VIEW ======================= -->
+<main class="jobs-view" id="jobs-view" hidden>
+  <aside class="rail" aria-label="Search settings">
+    <section class="step" id="nl-search">
+      <div class="step-head"><h2>Describe the job you want</h2></div>
+      <form id="nl-form">
+        <textarea class="input" id="nl-text" rows="2" aria-label="Describe the job you want"
+          placeholder="e.g. Remote data engineering roles in Manchester over £55k with visa sponsorship"></textarea>
+        <button class="btn small primary" type="submit" style="margin-top:6px">Set up search</button>
+      </form>
+      <div id="nl-result" role="status"></div>
+    </section>
+    <section class="step" id="search-criteria">
+      <div class="step-head"><h2>Search criteria</h2></div>
+      <form id="add-title-form" class="criteria-group">
+        <label for="s-title">Job titles</label>
+        <div class="criteria-row">
+          <input class="input" id="s-title" placeholder="e.g. Data Engineer" required>
+          <button class="btn small" type="submit" aria-label="Add job title">Add</button>
+        </div>
+        <ul id="s-title-list" class="criteria-list" aria-label="Selected job titles"></ul>
+      </form>
+      <form id="add-location-form" class="criteria-group">
+        <div class="criteria-row location-criteria">
+          <label for="s-location">Locations</label>
+          <label for="s-radius">Miles</label>
+        </div>
+        <div class="criteria-row location-criteria">
+          <input class="input" id="s-location" placeholder="e.g. Manchester" required>
+          <input class="input" id="s-radius" type="number" min="1" step="1" value="20">
+          <button class="btn small" type="submit" aria-label="Add location">Add</button>
+        </div>
+        <ul id="s-location-list" class="criteria-list" aria-label="Selected locations"></ul>
+      </form>
+      <label class="check"><input type="checkbox" id="s-remote"> Include UK remote roles</label>
+      <div class="two">
+        <label class="field">Min salary £<input class="input" id="s-salary" type="number" min="0" step="1000"></label>
+        <label class="field">Posted within<select id="s-days"><option value="1">1 day</option><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></label>
+      </div>
+      <label class="field">Exclude titles containing<input class="input" id="s-exclude" placeholder="graduate, apprentice"></label>
+      <label class="field">Company boards <span class="muted">(e.g. greenhouse:monzo)</span><textarea id="s-boards" rows="3" placeholder="greenhouse:companyname&#10;lever:companyname&#10;ashby:companyname"></textarea></label>
+      <button class="btn small" id="save-search-btn" type="button">Save search</button>
+    </section>
+    <section class="step">
+      <div class="step-head"><h2>Scan sources</h2></div>
+      <label class="src-row"><input type="checkbox" data-src="arbeitnow"> <span><b>Arbeitnow UK</b> free feed</span><span class="tag">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="nhs"> <span><b>NHS Jobs</b> official feed (incl. Trac trusts)</span><span class="tag">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="workhub"> <span><b>GOV.UK Work Hub</b> (was Find a Job)</span><span class="tag">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="reed"> <span><b>Reed</b> official API</span><span class="tag muted" data-key="REED_API_KEY">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="adzuna"> <span><b>Adzuna</b> official API</span><span class="tag muted" data-key="ADZUNA_APP_KEY">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="ats"> <span><b>Company boards</b> Greenhouse, Lever, Ashby, Workable</span></label>
+      <label class="src-row"><input type="checkbox" data-src="himalayas"> <span><b>Himalayas</b> UK-eligible remote jobs</span></label>
+      <label class="src-row"><input type="checkbox" data-src="wwr"> <span><b>We Work Remotely</b> public RSS feed</span></label>
+      <label class="src-row"><input type="checkbox" data-src="ktp"> <span><b>KTP Associate roles</b> Innovate UK's national list of Knowledge Transfer Partnership jobs, each checked for the Global Talent visa fast track</span><span class="tag">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="yugenox"> <span><b>Yugenox Jobs</b> employers' own postings via MCP (mostly US/Canada; UK and remote kept)</span><span class="tag">no key</span></label>
+      <label class="src-row"><input type="checkbox" data-src="jobserve"> <span><b>JobServe</b> saved search RSS</span></label>
+      <div class="feed-settings" id="jobserve-feed-settings" hidden>
+        <label class="field" for="s-jobserve-rss">JobServe RSS alert URL</label>
+        <input class="input" id="s-jobserve-rss" type="url" placeholder="https://www.jobserve.com/…" autocomplete="off">
+        <p class="hint">Copy the RSS link from JobServe’s saved searches and alerts.</p>
+      </div>
+      <label class="src-row"><input type="checkbox" data-src="linkedin"> <span><b>LinkedIn</b> guest search</span><span class="tag muted" data-key="bun">needs bun</span></label>
+      <p class="hint warn-hint" id="li-note" hidden>LinkedIn's terms forbid automated access. The repo's CLI keeps volume low; use it sparingly.</p>
+      <details class="keys">
+        <summary>API keys</summary>
+        <p class="hint">Free: <b>reed.co.uk/developers</b> and <b>developer.adzuna.com</b>. Saved to <code>webui/.env</code>, never shown again.</p>
+        <input class="input" id="k-reed" type="password" placeholder="Reed API key" autocomplete="off">
+        <input class="input" id="k-azid" type="password" placeholder="Adzuna app_id" autocomplete="off">
+        <input class="input" id="k-azkey" type="password" placeholder="Adzuna app_key" autocomplete="off">
+        <input class="input" id="k-enhancv" type="password" placeholder="Enhancv API key (Business plan, optional)" autocomplete="off">
+        <button class="btn small" id="keys-save" style="margin-top:8px">Save keys</button>
+      </details>
+    </section>
+    <section class="step">
+      <div class="step-head"><h2>Browse other boards</h2></div>
+      <p class="hint">Open a board to search it directly. Use <strong>Add a job</strong> to save an advert you find.</p>
+      <div class="board-links">
+        <a class="btn small" href="https://uk.indeed.com/" target="_blank" rel="noopener noreferrer">Indeed ↗</a>
+        <a class="btn small" href="https://www.jobserve.com/gb/en/Job-Search/" target="_blank" rel="noopener noreferrer">JobServe ↗</a>
+        <a class="btn small" href="https://www.charityjob.co.uk/jobs" target="_blank" rel="noopener noreferrer">CharityJob ↗</a>
+        <a class="btn small" href="https://www.jobs.nhs.uk/candidate/search/results" target="_blank" rel="noopener noreferrer">NHS Jobs ↗</a>
+        <a class="btn small" href="https://www.linkedin.com/jobs/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+        <a class="btn small" href="https://www.glassdoor.co.uk/Job/index.htm" target="_blank" rel="noopener noreferrer">Glassdoor ↗</a>
+        <a class="btn small" href="https://www.jobs.ac.uk/" target="_blank" rel="noopener noreferrer">jobs.ac.uk ↗</a>
+        <a class="btn small" href="https://www.civilservicejobs.service.gov.uk/csr/index.cgi" target="_blank" rel="noopener noreferrer">Civil Service Jobs ↗</a>
+      </div>
+    </section>
+    <section class="step">
+      <div class="step-head"><h2>Visa sponsorship</h2><span class="tag muted" id="sp-state">no register</span></div>
+      <p class="hint">Matches each employer against the Home Office register of licensed sponsors, and reads the advert for sponsorship wording.</p>
+      <div class="eact"><button class="btn small" id="sp-refresh">Update from GOV.UK</button>
+        <label class="btn small">Upload CSV<input type="file" id="sp-upload" accept=".csv" hidden></label></div>
+    </section>
+    <section class="step">
+      <div class="step-head"><h2>Your preferences</h2></div>
+      <p class="hint">Used to rank jobs by fit (Best fit sort). Nothing is hidden; each job shows why it scored as it did.</p>
+      <div class="pref-row"><span>Work mode</span>
+        <label class="check"><input type="checkbox" data-pmode="Remote"> Remote</label>
+        <label class="check"><input type="checkbox" data-pmode="Hybrid"> Hybrid</label>
+        <label class="check"><input type="checkbox" data-pmode="On-site"> On-site</label></div>
+      <div class="pref-row"><span>Open to</span>
+        <label class="check"><input type="checkbox" data-ptype="Permanent"> Permanent</label>
+        <label class="check"><input type="checkbox" data-ptype="Contract"> Contract</label>
+        <label class="check"><input type="checkbox" data-ptype="Temporary"> Fixed term</label>
+        <label class="check"><input type="checkbox" data-ptype="Part-time"> Part-time</label></div>
+      <label class="check"><input type="checkbox" id="p-sponsor"> I need Skilled Worker visa sponsorship</label>
+      <label class="check"><input type="checkbox" id="p-agency"> Prefer employers over recruitment agencies</label>
+      <label class="field">Notice period <span class="muted">(shown when you apply, for the form)</span><input class="input" id="p-notice" placeholder="e.g. 1 month"></label>
+      <button class="btn small" id="p-save" type="button">Save and re-rank</button>
+    </section>
+    <div class="rail-foot">
+      <button class="btn primary block" id="scan-btn">Save &amp; scan jobs</button>
+      <p class="hint center" id="scan-hint"></p>
+    </div>
+  </aside>
+
+  <section class="job-list-wrap" id="job-results" aria-label="Job results" tabindex="-1">
+    <div class="list-head">
+      <div><strong id="jobs-count">No jobs yet</strong> <span class="muted" id="jobs-scan"></span>
+        <button class="btn small" id="add-job-btn" style="margin-left:8px">+ Add a job</button></div>
+      <div class="list-tools">
+        <div class="filters" id="job-filters"></div>
+        <label class="toggle"><input type="checkbox" id="sp-only"><span>Sponsors only</span></label>
+        <label class="toggle" title="KTP roles that look like they fit the Global Talent visa fast track (likely or worth checking)"><input type="checkbox" id="gt-only"><span>Global Talent route</span></label>
+        <label class="toggle" title="Hide adverts with several ghost-job signals"><input type="checkbox" id="ghost-hide"><span>Hide likely ghost jobs</span></label>
+        <select id="job-source" aria-label="Filter by source"><option value="">All sources</option></select>
+        <select id="job-mode" aria-label="Filter by work mode"><option value="">Any work mode</option></select>
+        <select id="job-type" aria-label="Filter by job type"><option value="">Any job type</option></select>
+        <select id="job-sort" aria-label="Sort jobs"><option value="fit">Best fit</option><option value="match">Best skills match</option><option value="new">Newest</option><option value="salary">Salary</option></select>
+      </div>
+    </div>
+    <div id="scan-progress" class="callout info" hidden></div>
+    <div id="scan-errors"></div>
+    <div id="job-list" class="job-list"></div>
+  </section>
+
+  <aside class="job-detail" id="job-detail" aria-label="Job details" tabindex="-1"><div class="empty-detail muted">Select a job to see the advert, your quick match and the Tailor button.</div></aside>
+</main>
+
+<dialog id="db-dialog" class="dialog">
+  <div class="dialog-head"><h2>Database</h2><button class="btn ghost" data-close>Close</button></div>
+  <div id="db-state" class="callout info">Checking…</div>
+  <p class="hint">With PostgreSQL connected, everything the app keeps about you is saved there: master CV and facts, skills bank, projects, tailored CVs and versions, jobs and statuses, applications and outcomes, interview packs, and the tracker. The files in your <code>documents</code> folder stay as a working copy and are kept in step both ways, so Claude Code's /apply still works and a lost folder is rebuilt from the database on the next start.</p>
+  <label class="field">Connection URL <span class="muted">(saved to webui/.env, never shown again)</span>
+    <input class="input" id="db-url" type="password" autocomplete="off" placeholder="postgresql://cvtailor:YOUR_PASSWORD@localhost:5432/cvtailor"></label>
+  <div class="eact"><button class="btn primary" id="db-connect">Test and connect</button>
+    <button class="btn" id="db-sync">Sync now</button>
+    <button class="btn ghost" id="db-off">Disconnect</button></div>
+  <details class="keys" style="margin-top:12px"><summary>Setting up PostgreSQL on Windows</summary>
+    <ol class="hint">
+      <li>Install PostgreSQL from postgresql.org/download/windows (or <code>winget install PostgreSQL.PostgreSQL.17</code>). Set a password for the <code>postgres</code> user and keep port 5432.</li>
+      <li>Open "SQL Shell (psql)" from the Start menu, log in as <code>postgres</code>, and run these two lines one at a time, with your own password:<br>
+        <code>CREATE USER cvtailor WITH PASSWORD 'choose-a-password';</code><br><code>CREATE DATABASE cvtailor OWNER cvtailor;</code></li>
+      <li>Paste <code>postgresql://cvtailor:choose-a-password@localhost:5432/cvtailor</code> above (with your password) and click Test and connect. The app creates its tables and copies your existing data in.</li>
+    </ol>
+  </details>
+  <details class="keys"><summary>Query it (SQL, Power BI)</summary>
+    <p class="hint">Tables, refreshed as you work: <code>cvt_jobs</code> (job list and statuses), <code>cvt_applications</code> (the tracker), <code>cvt_application_events</code> (each interview, offer or rejection with its date), <code>cvt_facts</code> (your fact bank). <code>cvt_files</code> holds the stored files themselves. Read them freely; let the app do the writing.</p>
+  </details>
+</dialog>
+
+<dialog id="engine-dialog" class="dialog">
+  <div class="dialog-head"><h2>AI providers</h2><button class="btn ghost" data-close>Close</button></div>
+  <p class="hint">If one provider fails, the app tries the next configured provider. Each draft shows which provider wrote it.</p>
+  <label class="field">Use first
+    <select id="engine-primary"></select>
+  </label>
+  <div class="routing-test">
+    <button class="btn small" id="test-routing" type="button">Test automatic routing</button>
+    <p class="hint">Sends a short test prompt. Provider timings reflect this app session.</p>
+    <div class="hint" id="routing-result" role="status"></div>
+  </div>
+  <div id="engine-list"></div>
+  <details class="keys" style="margin-top:10px"><summary>API keys for DeepSeek / OpenAI / Anthropic</summary>
+    <p class="hint">Saved to <code>webui/.env</code>, never shown again. A ChatGPT subscription does not include an OpenAI API key; use the Codex CLI for your ChatGPT plan instead.</p>
+    <input class="input" id="k-deepseek" type="password" placeholder="DeepSeek API key (platform.deepseek.com)" autocomplete="off">
+    <input class="input" id="k-openai" type="password" placeholder="OpenAI API key (optional)" autocomplete="off">
+    <input class="input" id="k-anthropic" type="password" placeholder="Anthropic API key (optional)" autocomplete="off">
+    <button class="btn small" id="engine-keys-save" style="margin-top:8px">Save keys</button>
+  </details>
+</dialog>
+
+<!-- ======================= ATS VIEW ======================= -->
+<main class="out-view" id="outcomes-view" hidden>
+  <section class="out-wrap" id="out-body"><div class="empty-detail muted" style="margin-top:20vh">Loading your applications…</div></section>
+</main>
+
+<main class="out-view" id="linkedin-view" hidden>
+  <section class="out-wrap li-wrap">
+    <div class="li-inputs">
+      <h2>Your LinkedIn profile</h2>
+      <p class="hint">Copy each part from your profile and paste it here. I check it against the skills that keep coming up in the jobs you've scanned, and only suggest adding what your facts back up. Nothing is sent to LinkedIn.</p>
+      <label class="field">Headline <small class="muted" id="li-head-n"></small><input class="input" id="li-headline" maxlength="400" placeholder="The line under your name"></label>
+      <label class="field">About <small class="muted" id="li-about-n"></small><textarea class="input" id="li-about" rows="8" maxlength="4000"></textarea></label>
+      <label class="field">Skills <small class="muted">(one per line or comma-separated)</small><textarea class="input" id="li-skills" rows="4" maxlength="4000"></textarea></label>
+      <label class="field">Experience <small class="muted">(optional: paste the whole section)</small><textarea class="input" id="li-exp" rows="6" maxlength="15000"></textarea></label>
+      <div class="eact"><button class="btn primary" id="li-check">Check my profile</button>
+        <button class="btn" id="li-suggest" title="Headline options and an About section written only from your facts">Draft headline &amp; About with AI</button></div>
+      <div id="li-drafts"></div>
+    </div>
+    <div class="li-results" id="li-results"><div class="empty-detail muted">Paste your profile and choose Check my profile.</div></div>
+  </section>
+</main>
+
+<main class="ats-view" id="ats-view" hidden>
+  <aside class="rail" aria-label="ATS check inputs">
+    <section class="step">
+      <div class="step-head"><h2>CV to check</h2></div>
+      <p class="hint">Check the exact file you would send. Or pick a CV tailored in this app.</p>
+      <label class="drop" data-target="ats-cv" id="ats-cv-drop"><input type="file" id="ats-cv" accept=".docx,.pdf" hidden>
+        <span class="drop-icon">⇪</span><span class="drop-text"><strong>Upload CV (.docx or .pdf)</strong><br>or pick below</span></label>
+      <label class="field" style="margin-top:8px">Or a tailored CV<select id="ats-slug"><option value="">—</option></select></label>
+    </section>
+    <section class="step">
+      <div class="step-head"><h2>Job to match</h2><span class="tag muted">Optional</span></div>
+      <label class="field">From your job list<select id="ats-job"><option value="">—</option></select></label>
+      <label class="field">Or paste the job description / person spec<textarea id="ats-jd" rows="8" class="paste"></textarea></label>
+      <label class="field">Job title (optional)<input class="input" id="ats-title"></label>
+    </section>
+    <div class="rail-foot"><button class="btn primary block" id="ats-run">Run ATS check</button>
+      <p class="hint center">Runs in code on your computer: instant and free, no AI.</p></div>
+  </aside>
+  <section class="job-list-wrap" id="ats-result"><div class="empty-detail muted" style="margin-top:20vh">Upload a CV and (optionally) a job to see what an applicant tracking system reads, and how well you match.</div></section>
+</main>
+
+<dialog id="add-job-dialog" class="dialog">
+  <div class="dialog-head"><h2>Add a job from anywhere</h2><button class="btn ghost" data-close>Close</button></div>
+  <p class="hint">Paste the full advert and its link to save it. Links from supported boards label the source automatically.</p>
+  <div class="two"><label class="field">Job title<input class="input" id="mj-title"></label><label class="field">Employer<input class="input" id="mj-company"></label></div>
+  <div class="two"><label class="field">Location<input class="input" id="mj-location"></label><label class="field">Advert / apply link<input class="input" id="mj-url" type="url"></label></div>
+  <label class="field">Full advert text (job description and person specification)<textarea id="mj-text" rows="10" class="paste"></textarea></label>
+  <div class="eact" style="justify-content:flex-end"><button class="btn primary" id="mj-save">Add job</button></div>
+</dialog>
+
+<dialog id="send-preview-dialog" class="dialog send-preview-dialog" aria-labelledby="send-preview-title">
+  <div class="dialog-head">
+    <h2 id="send-preview-title">Final preview</h2>
+    <button class="btn ghost" data-close>Close</button>
+  </div>
+  <div class="send-preview-toolbar">
+    <label class="field">File to send
+      <select id="send-preview-format" class="input"></select>
+    </label>
+    <a class="btn" id="send-preview-download" hidden>Download checked file</a>
+    <button class="btn primary" id="send-preview-continue" hidden>Continue to application</button>
+  </div>
+  <div id="send-preview-body" class="send-preview-body"></div>
+</dialog>
+
+<dialog id="apply-dialog" class="dialog small-dialog">
+  <h2>Submit your application</h2>
+  <p class="hint">Upload your files and submit the form on the employer’s site.</p>
+  <div id="apply-files" class="application-files"></div>
+  <div class="eact application-actions">
+    <a id="apply-advert" class="btn small link" target="_blank" rel="noopener">Open employer’s advert</a>
+    <button id="apply-copy" class="btn small" type="button" hidden>Copy CV summary</button>
+  </div>
+  <p class="hint" id="apply-notice" hidden></p>
+  <div class="eact" style="justify-content:flex-end;margin-top:14px">
+    <button class="btn" data-close>Not submitted yet</button>
+    <button class="btn primary" id="apply-confirm">I submitted it, mark as applied</button>
+  </div>
+</dialog>
+
+<dialog id="facts-dialog" class="dialog">
+  <div class="dialog-head">
+    <h2>Fact bank</h2>
+    <button class="btn ghost" data-close>Close</button>
+  </div>
+  <p class="hint">Numbered from your master CV (F), your repo profile once /setup has run (P), and facts you add here (X). Added facts are saved to <code>documents/cv/extra_facts.md</code>.</p>
+  <div id="facts-list" class="facts-list"></div>
+  <form id="fact-form" class="fact-form">
+    <input id="fact-input" class="input" placeholder="Add a true fact that isn't on your CV, e.g. 'Line-managed two analysts from 2024'">
+    <button class="btn">Add fact</button>
+  </form>
+  <details id="import-box" class="import-box">
+    <summary>Import projects that aren't on your CV (GitHub or LinkedIn)</summary>
+    <p class="hint">The app reads each project and drafts short facts from what it can see. You edit and tick the ones that are true; only those are saved, and the assistant and tailoring can then use them.</p>
+    <div class="two">
+      <label class="field">GitHub username or link<input class="input" id="gh-user" placeholder="e.g. dibanga2800"></label>
+      <div class="field" style="align-self:end"><button class="btn" id="gh-list" type="button">List my repos</button></div>
+    </div>
+    <div id="gh-repos" class="repo-list"></div>
+    <label class="field">Or paste text about your projects<textarea id="proj-text" class="paste" rows="4" placeholder="LinkedIn doesn't let apps read your profile. Copy your Projects section (or the text of LinkedIn's Save to PDF) and paste it here. A portfolio page works too."></textarea></label>
+    <div class="eact" style="justify-content:flex-end"><span class="hint" id="proj-status"></span><button class="btn primary" id="proj-draft" type="button">Draft facts</button></div>
+    <div id="proj-review"></div>
+  </details>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

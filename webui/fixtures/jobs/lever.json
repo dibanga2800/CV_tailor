@@ -1,0 +1,21 @@
+[
+ {
+  "id": "abc-1",
+  "text": "BI Lead",
+  "categories": {
+   "location": "Birmingham",
+   "team": "Data"
+  },
+  "hostedUrl": "https://jobs.lever.co/coreco/abc-1",
+  "applyUrl": "https://jobs.lever.co/coreco/abc-1/apply",
+  "createdAt": 1794800000000,
+  "descriptionPlain": "Lead our BI function. Power BI, DAX, SQL, stakeholder management.",
+  "lists": [
+   {
+    "text": "Requirements",
+    "content": "<li>5 years BI</li><li>Azure</li>"
+   }
+  ],
+  "additionalPlain": "Hybrid working."
+ }
+]

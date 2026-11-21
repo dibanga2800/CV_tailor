@@ -1,0 +1,37 @@
+{
+ "results": [
+  {
+   "jobId": 56001234,
+   "employerName": "Pennine Housing Trust",
+   "jobTitle": "Data Engineering Lead",
+   "locationName": "Leeds",
+   "minimumSalary": 52000,
+   "maximumSalary": 58000,
+   "date": "18/11/2026",
+   "jobDescription": "We are looking for a Data Engineering Lead to own our Azure data platform... Python and SQL ...",
+   "jobUrl": "https://www.reed.co.uk/jobs/data-engineering-lead/56001234"
+  },
+  {
+   "jobId": 56005555,
+   "employerName": "Midlands Logistics Ltd",
+   "jobTitle": "Power BI Developer",
+   "locationName": "Stoke-on-Trent",
+   "minimumSalary": 40000,
+   "maximumSalary": 45000,
+   "date": "12/11/2026",
+   "jobDescription": "Power BI developer with DAX, Power Query and SQL Server experience to build operational dashboards... Unfortunately we are unable to offer visa sponsorship.",
+   "jobUrl": "https://www.reed.co.uk/jobs/power-bi-developer/56005555"
+  },
+  {
+   "jobId": 56009999,
+   "employerName": "Acme Recruitment",
+   "jobTitle": "Graduate Data Analyst",
+   "locationName": "Birmingham",
+   "minimumSalary": 24000,
+   "maximumSalary": 26000,
+   "date": "10/11/2026",
+   "jobDescription": "Graduate role",
+   "jobUrl": "https://www.reed.co.uk/jobs/graduate/56009999"
+  }
+ ]
+}

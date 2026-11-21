@@ -1,0 +1,511 @@
+{
+ "target": {
+  "company": "Pennine Housing Trust",
+  "role": "Data Engineering Lead",
+  "location": "Leeds (hybrid)",
+  "seniority": "Lead",
+  "domain": "Social housing",
+  "deadline": "2026-12-12",
+  "reference": "PHT-0458",
+  "salary": "£52,000 - £58,000"
+ },
+ "warnings": [
+  {
+   "rule": "S2",
+   "quote": "The successful candidate will be subject to a basic DBS check."
+  }
+ ],
+ "requirements": [
+  {
+   "id": "C1",
+   "requirement": "Experience designing and maintaining data pipelines in Azure",
+   "status": "essential",
+   "source": "PS",
+   "passage": "Proven experience designing and maintaining data pipelines in Azure",
+   "category": "experience",
+   "assessed_at": "application",
+   "covered": "yes",
+   "evidence": "Azure Data Factory and dbt pipelines for clients; ingestion of 20,000 PDFs/month",
+   "fact_ids": [
+    "F011",
+    "F012"
+   ]
+  },
+  {
+   "id": "C2",
+   "requirement": "Strong SQL and data warehousing skills",
+   "status": "essential",
+   "source": "PS",
+   "passage": "Strong SQL and data warehousing skills",
+   "category": "skill",
+   "assessed_at": "test",
+   "covered": "yes",
+   "evidence": "Migrated 14 Power BI reports onto a SQL Server warehouse",
+   "fact_ids": [
+    "F007",
+    "F021"
+   ]
+  },
+  {
+   "id": "C3",
+   "requirement": "Experience of Power BI reporting for operational teams",
+   "status": "essential",
+   "source": "PS",
+   "passage": "Experience of Power BI reporting for operational teams",
+   "category": "experience",
+   "assessed_at": "application",
+   "covered": "yes",
+   "evidence": "Power BI estate on a central warehouse; shrink reporting for regional managers",
+   "fact_ids": [
+    "F007",
+    "F014"
+   ]
+  },
+  {
+   "id": "C4",
+   "requirement": "Ability to lead and develop a small team",
+   "status": "essential",
+   "source": "PS",
+   "passage": "Ability to lead and develop a small technical team",
+   "category": "behaviour",
+   "assessed_at": "interview",
+   "covered": "partial",
+   "evidence": "Leads software and data in a 3-person IT team; trained 30 store managers",
+   "fact_ids": [
+    "F005",
+    "F016"
+   ]
+  },
+  {
+   "id": "C5",
+   "requirement": "Knowledge of information security standards (e.g. Cyber Essentials)",
+   "status": "essential",
+   "source": "PS",
+   "passage": "Knowledge of information security standards such as Cyber Essentials",
+   "category": "knowledge",
+   "assessed_at": "application",
+   "covered": "yes",
+   "evidence": "Led Cyber Essentials certification, achieved March 2024",
+   "fact_ids": [
+    "F008"
+   ]
+  },
+  {
+   "id": "C6",
+   "requirement": "Degree in a relevant subject or equivalent experience",
+   "status": "essential",
+   "source": "PS",
+   "passage": "Degree in a relevant subject or equivalent experience",
+   "category": "qualification",
+   "assessed_at": "application",
+   "covered": "yes",
+   "evidence": "BSc Computer Science, First Class",
+   "fact_ids": [
+    "F017",
+    "F018"
+   ]
+  },
+  {
+   "id": "C7",
+   "requirement": "Microsoft Azure certification",
+   "status": "preferred",
+   "source": "PS",
+   "passage": "Microsoft Azure certification",
+   "category": "qualification",
+   "assessed_at": "application",
+   "covered": "yes",
+   "evidence": "DP-203 Azure Data Engineer Associate, 2023",
+   "fact_ids": [
+    "F019"
+   ]
+  },
+  {
+   "id": "C8",
+   "requirement": "Experience in the housing or public sector",
+   "status": "preferred",
+   "source": "PS",
+   "passage": "Experience in the housing or wider public sector",
+   "category": "experience",
+   "assessed_at": "application",
+   "covered": "no",
+   "evidence": "No housing or public sector roles; charity volunteering is adjacent",
+   "fact_ids": []
+  },
+  {
+   "id": "C9",
+   "requirement": "Microsoft Fabric",
+   "status": "preferred",
+   "source": "JD",
+   "passage": "exposure to Microsoft Fabric would be an advantage",
+   "category": "skill",
+   "assessed_at": "not stated",
+   "covered": "no",
+   "evidence": "Not in master CV",
+   "fact_ids": []
+  },
+  {
+   "id": "C10",
+   "requirement": "Python for data engineering",
+   "status": "not supplied",
+   "source": "JD",
+   "passage": "using Python and SQL to automate data quality checks",
+   "category": "skill",
+   "assessed_at": "not stated",
+   "covered": "yes",
+   "evidence": "Python incident portal; Python listed",
+   "fact_ids": [
+    "F006",
+    "F021"
+   ]
+  }
+ ],
+ "hr_flags": [],
+ "fit": {
+  "summary": "Strong match on the Azure, SQL and Power BI essentials, with direct Cyber Essentials evidence. Housing sector experience and Microsoft Fabric are the visible gaps.",
+  "strengths": [
+   "Azure pipelines in production for multiple clients",
+   "Warehouse migration with a measured refresh-time gain",
+   "Security standards ownership"
+  ],
+  "risks": [
+   "Team leadership evidence is a 3-person team, not line management of engineers",
+   "No housing or public sector history"
+  ]
+ },
+ "cv": {
+  "name": "Alex Morgan",
+  "subtitle": "Data Engineering Lead | Azure Pipelines & Power BI Warehousing",
+  "contact": {
+   "email": "alex.morgan@example.com",
+   "phone": "07700 900123",
+   "location": "Manchester, UK",
+   "links": [
+    {
+     "label": "LinkedIn",
+     "url": "https://linkedin.com/in/alexmorgan-example"
+    }
+   ]
+  },
+  "summary": [
+   {
+    "text": "Data and software engineer with 9 years in retail security and operations, currently leading software and data for a 40-site security group.",
+    "facts": [
+     "F003",
+     "F005"
+    ]
+   },
+   {
+    "text": "Delivers Azure Data Factory and dbt pipelines and a SQL Server warehouse behind operational Power BI reporting.",
+    "facts": [
+     "F011",
+     "F007"
+    ]
+   }
+  ],
+  "skills": [
+   {
+    "category": "Data engineering",
+    "items": [
+     "Azure Data Factory",
+     "dbt",
+     "Python",
+     "SQL",
+     "T-SQL"
+    ]
+   },
+   {
+    "category": "Warehousing & BI",
+    "items": [
+     "SQL Server",
+     "Power BI",
+     "DAX"
+    ]
+   },
+   {
+    "category": "Tools",
+    "items": [
+     "Git",
+     "HubSpot",
+     "Excel VBA",
+     "React"
+    ]
+   }
+  ],
+  "experience": [
+   {
+    "title": "IT Lead",
+    "company": "Northgate Security Group",
+    "location": "Manchester",
+    "dates": "Jan 2023 - Present",
+    "bullets": [
+     {
+      "text": "Migrated 14 Power BI reports onto a central SQL Server data warehouse, which cut refresh time from 6 hours to 40 minutes.",
+      "facts": [
+       "F007"
+      ]
+     },
+     {
+      "text": "Lead software and data in a 3-person IT team serving 1,200 staff across 40 sites.",
+      "facts": [
+       "F005"
+      ]
+     },
+     {
+      "text": "Built an incident reporting portal in Python and React for 350 store users, which replaced spreadsheet recording.",
+      "facts": [
+       "F006"
+      ]
+     },
+     {
+      "text": "Led Cyber Essentials certification with an external assessor, achieved in March 2024.",
+      "facts": [
+       "F008"
+      ]
+     },
+     {
+      "text": "Improved data quality by 35% through automated validation checks.",
+      "facts": []
+     }
+    ]
+   },
+   {
+    "title": "Data Engineer (part-time consultant)",
+    "company": "Brightpath Analytics",
+    "location": "Remote",
+    "dates": "Jun 2022 - Present",
+    "bullets": [
+     {
+      "text": "Deliver Azure Data Factory and dbt pipelines for venture capital and legal-tech clients.",
+      "facts": [
+       "F011"
+      ]
+     },
+     {
+      "text": "Engineered a document ingestion pipeline processing 20,000 legal PDFs per month.",
+      "facts": [
+       "F012"
+      ]
+     }
+    ]
+   },
+   {
+    "title": "Loss Prevention Analyst",
+    "company": "Harbour Retail plc",
+    "location": "Leeds",
+    "dates": "Sep 2016 - Dec 2022",
+    "bullets": [
+     {
+      "text": "Helped analyse incident and stock-loss data across 85 stores, which pinpointed hotspots for regional managers.",
+      "facts": [
+       "F014"
+      ]
+     },
+     {
+      "text": "Automated weekly shrink reporting in SQL and Excel VBA, saving 10 hours per week.",
+      "facts": [
+       "F015"
+      ]
+     }
+    ]
+   }
+  ],
+  "projects": [],
+  "education": [
+   {
+    "qualification": "BSc Computer Science, First Class Honours",
+    "institution": "University of Salford",
+    "location": "Salford",
+    "dates": "2012 - 2015",
+    "detail": "",
+    "facts": [
+     "F017",
+     "F018"
+    ]
+   }
+  ],
+  "certifications": [
+   {
+    "text": "Microsoft Certified: Azure Data Engineer Associate (DP-203), 2023",
+    "facts": [
+     "F019"
+    ]
+   },
+   {
+    "text": "PRINCE2 Foundation, 2021",
+    "facts": [
+     "F020"
+    ]
+   }
+  ],
+  "extras": [
+   {
+    "heading": "Volunteering",
+    "items": [
+     {
+      "text": "Volunteer developer for a UK homelessness charity, building a volunteer rota app used by 60 volunteers.",
+      "facts": [
+       "F022"
+      ]
+     }
+    ]
+   }
+  ],
+  "section_order": [
+   "summary",
+   "skills",
+   "experience",
+   "education",
+   "certifications",
+   "extras",
+   "projects"
+  ]
+ },
+ "stretch": [
+  {
+   "text": "Lead software and data in a 3-person IT team serving 1,200 staff across 40 sites.",
+   "why": "The PS asks to 'lead and develop' a team; be ready to explain whether you line-manage the other two."
+  }
+ ],
+ "decisions": [
+  "Led with the warehouse migration because C2 and C3 are both essential and it is the only measured BI result.",
+  "Kept the Cyber Essentials bullet high to evidence C5 directly in the panel's wording.",
+  "Moved volunteering into its own section as the closest evidence for the housing/public sector preference."
+ ],
+ "statement": [
+  {
+   "criteria": [
+    "C1"
+   ],
+   "heading": "Designing and maintaining data pipelines in Azure",
+   "text": "As a part-time data engineering consultant at Brightpath Analytics I deliver Azure Data Factory and dbt pipelines for venture capital and legal-tech clients. One of these is a document ingestion pipeline that processes 20,000 legal PDFs every month.",
+   "facts": [
+    "F011",
+    "F012"
+   ]
+  },
+  {
+   "criteria": [
+    "C2",
+    "C3"
+   ],
+   "heading": "SQL, warehousing and Power BI reporting",
+   "text": "At Northgate Security Group I migrated 14 Power BI reports onto a central SQL Server data warehouse, which cut the refresh time from 6 hours to 40 minutes for operational teams.",
+   "facts": [
+    "F007"
+   ]
+  }
+ ],
+ "keywords": [
+  {
+   "term": "Azure",
+   "priority": "high",
+   "req": "C1"
+  },
+  {
+   "term": "data pipelines",
+   "priority": "high",
+   "req": "C1"
+  },
+  {
+   "term": "SQL",
+   "priority": "high",
+   "req": "C2"
+  },
+  {
+   "term": "data warehouse",
+   "priority": "high",
+   "req": "C2"
+  },
+  {
+   "term": "Power BI",
+   "priority": "high",
+   "req": "C3"
+  },
+  {
+   "term": "Cyber Essentials",
+   "priority": "high",
+   "req": "C5"
+  },
+  {
+   "term": "Python",
+   "priority": "medium",
+   "req": "C10"
+  },
+  {
+   "term": "data quality",
+   "priority": "medium",
+   "req": "C10"
+  },
+  {
+   "term": "PRINCE2",
+   "priority": "low",
+   "req": ""
+  },
+  {
+   "term": "Microsoft Fabric",
+   "priority": "low",
+   "req": "C9"
+  },
+  {
+   "term": "Azure certification",
+   "priority": "low",
+   "req": "C7"
+  },
+  {
+   "term": "housing",
+   "priority": "low",
+   "req": "C8"
+  }
+ ],
+ "cover_letter": {
+  "greeting": "Dear Hiring Manager,",
+  "paragraphs": [
+   {
+    "text": "I am applying for the Data Engineering Lead role (ref PHT-0458). For the past three years I have led software and data at Northgate Security Group, where I moved 14 Power BI reports onto a central SQL Server warehouse and cut refresh time from 6 hours to 40 minutes.",
+    "facts": [
+     "F004",
+     "F007"
+    ]
+   },
+   {
+    "text": "Your person specification asks for Azure pipelines, strong SQL and warehousing, and Power BI reporting for operational teams. Here is how my work maps to it:",
+    "facts": []
+   },
+   {
+    "text": "You describe an Azure platform that supports 30,000 homes and a small team of analysts to lead. That combination of operational reporting and team development is the work I want to do next, in an organisation whose data serves tenants directly.",
+    "facts": []
+   },
+   {
+    "text": "I work by putting reliable data in front of the people who make decisions, documenting it so others can maintain it, and training users so reports get used. I have not worked in housing; my volunteer work for a homelessness charity is the closest experience I bring to the sector.",
+    "facts": [
+     "F016",
+     "F022"
+    ]
+   }
+  ],
+  "bullets": [
+   {
+    "text": "Deliver Azure Data Factory and dbt pipelines for venture capital and legal-tech clients, including ingestion of 20,000 legal PDFs a month.",
+    "facts": [
+     "F011",
+     "F012"
+    ]
+   },
+   {
+    "text": "Led Cyber Essentials certification with an external assessor, achieved in March 2024.",
+    "facts": [
+     "F008"
+    ]
+   },
+   {
+    "text": "Automated weekly shrink reporting in SQL and Excel VBA, saving 10 hours per week.",
+    "facts": [
+     "F015"
+    ]
+   }
+  ],
+  "bullets_after": 1,
+  "closing": "I would welcome the chance to discuss how I could help develop your data platform.",
+  "sign_off": "Kind regards,"
+ }
+}
