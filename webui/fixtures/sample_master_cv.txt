@@ -1,0 +1,36 @@
+Alex Morgan
+Manchester, UK | 07700 900123 | alex.morgan@example.com | linkedin.com/in/alexmorgan-example
+
+PROFILE
+Data and software engineer with 9 years in retail security and operations. Builds reporting platforms, data pipelines and internal tools used by store and regional teams.
+
+EXPERIENCE
+IT Lead | Northgate Security Group | Manchester | Jan 2023 - Present
+- Lead software and data in a 3-person IT team serving 1,200 staff across 40 sites.
+- Built an incident reporting portal in Python and React used by 350 store users, replacing spreadsheets.
+- Migrated 14 Power BI reports onto a central SQL Server data warehouse, cutting refresh time from 6 hours to 40 minutes.
+- Led Cyber Essentials certification with an external assessor, achieved in March 2024.
+- Administer HubSpot, office networking and alarm receiving centre (ARC) systems.
+
+Data Engineer (part-time consultant) | Brightpath Analytics | Remote | Jun 2022 - Present
+- Deliver Azure Data Factory and dbt pipelines for venture capital and legal-tech clients.
+- Built a document ingestion pipeline processing 20,000 legal PDFs per month.
+
+Loss Prevention Analyst | Harbour Retail plc | Leeds | Sep 2016 - Dec 2022
+- Analysed incident and stock-loss data across 85 stores, identifying hotspots for regional managers.
+- Automated weekly shrink reporting in SQL and Excel VBA, saving 10 hours per week.
+- Trained 30 store managers on incident recording standards.
+
+EDUCATION
+BSc Computer Science | University of Salford | Salford | 2012 - 2015
+First Class Honours.
+
+CERTIFICATIONS
+Microsoft Certified: Azure Data Engineer Associate (DP-203), 2023
+PRINCE2 Foundation, 2021
+
+SKILLS
+Python, SQL, T-SQL, React, Power BI, DAX, Azure Data Factory, dbt, SQL Server, Git, HubSpot, Excel VBA
+
+VOLUNTEERING
+Volunteer developer for a UK homelessness charity, building a volunteer rota app used by 60 volunteers.

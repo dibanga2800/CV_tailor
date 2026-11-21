@@ -1,0 +1,6 @@
+Pennine Housing Trust - Data Engineering Lead
+Leeds (hybrid) | £52,000 - £58,000 | Ref PHT-0458 | Closing date 12 December 2026
+
+We are looking for a Data Engineering Lead to own our Azure data platform, which supports 30,000 homes.
+You will build and maintain pipelines, using Python and SQL to automate data quality checks, and lead a small team of two analysts.
+Exposure to Microsoft Fabric would be an advantage. The successful candidate will be subject to a basic DBS check.

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Fixture remote jobs</title>
+    <item>
+      <title>Example Instruments: Data Engineer</title>
+      <link>https://weworkremotely.com/remote-jobs/example-instruments-data-engineer</link>
+      <guid>sample-wwr-1</guid>
+      <region>Europe Only</region>
+      <description><![CDATA[<p>Design reliable data pipelines and write SQL transformations for the analytics team. Document data contracts, monitor data quality, and review changes with engineers.</p>]]></description>
+    </item>
+    <item>
+      <title>Example US: Data Engineer</title>
+      <link>https://weworkremotely.com/remote-jobs/example-us-data-engineer</link>
+      <region>USA Only</region>
+      <description>Fixture for an ineligible region.</description>
+    </item>
+  </channel>
+</rss>

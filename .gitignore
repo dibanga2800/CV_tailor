@@ -121,3 +121,8 @@ company_research/*.json
 
 # Brainstorm mockups (superpowers visual companion) - never ship
 .superpowers/
+
+# CV Tailor web app
+!webui/.env.example
+!webui/static/*.png
+webui/.venv/

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Fixture JobServe saved search</title>
+    <item>
+      <title>Data Engineer</title>
+      <company>Example Data</company>
+      <location>Manchester</location>
+      <link>https://www.jobserve.com/gb/en/Job/fixture-data-engineer/</link>
+      <guid>sample-jobserve-1</guid>
+      <description><![CDATA[<p>Build data processing workflows for public reporting. Collaborate with analysts to define transformations, check completeness, and document the source of key figures.</p>]]></description>
+    </item>
+  </channel>
+</rss>

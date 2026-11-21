@@ -1,0 +1,33 @@
+{
+ "jobs": [
+  {
+   "id": "yx-1",
+   "title": "Senior Data Engineer",
+   "company": "Acme Analytics",
+   "location": "London, United Kingdom",
+   "salary": "\u00a370,000 - \u00a385,000",
+   "posted_at": "2026-11-18",
+   "url": "https://jobs.yugenox.com/jobs/yx-1",
+   "apply_url": "https://acme.example/careers/1",
+   "description": "Build pipelines in Python, dbt and Snowflake."
+  },
+  {
+   "id": "yx-2",
+   "title": "Data Engineer",
+   "company": "Northwind",
+   "location": "Austin, TX",
+   "url": "https://jobs.yugenox.com/jobs/yx-2",
+   "apply_url": "https://northwind.example/apply"
+  },
+  {
+   "id": "yx-3",
+   "title": "Senior Data Engineer (Remote)",
+   "company": "Globex",
+   "location": "Remote",
+   "remote": true,
+   "url": "https://jobs.yugenox.com/jobs/yx-3",
+   "apply_url": "https://globex.example/apply",
+   "posted_at": "2026-11-19"
+  }
+ ]
+}

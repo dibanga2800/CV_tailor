@@ -1,0 +1,26 @@
+{
+ "meta": {
+  "name": "Brightwave"
+ },
+ "jobs": [
+  {
+   "id": 777,
+   "title": "Senior Data Engineer",
+   "location": {
+    "name": "Remote (UK)"
+   },
+   "absolute_url": "https://boards.greenhouse.io/brightwave/jobs/777",
+   "first_published": "2026-11-15T10:00:00Z",
+   "content": "&lt;p&gt;Visa sponsorship is available for this role.&lt;/p&gt;&lt;p&gt;Build pipelines in Azure Data Factory, dbt and Python. Experience with Microsoft Fabric a plus. Data quality and governance matter to us.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;SQL Server and T-SQL&lt;/li&gt;&lt;li&gt;Power BI&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;&lt;p&gt;More details about the role and team culture. &lt;/p&gt;"
+  },
+  {
+   "id": 778,
+   "title": "Office Manager",
+   "location": {
+    "name": "London"
+   },
+   "absolute_url": "https://boards.greenhouse.io/brightwave/jobs/778",
+   "content": "Admin"
+  }
+ ]
+}
